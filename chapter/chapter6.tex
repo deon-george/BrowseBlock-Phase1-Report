@@ -1,0 +1,55 @@
+\chapter{System Implementation}
+
+\section{Development Environment}
+\begin{sloppypar}
+\raggedright
+The proposed implementation uses a Manifest V3 extension for Chromium-based browsers,
+React with Tailwind CSS for the dashboard, Python with FastAPI for backend services,
+Firebase Authentication for identity, and MongoDB for application data. Python
+machine-learning components use XGBoost for URL and file classification and Random
+Forest for initial email screening. QR-decoding, file-analysis, Playwright testing,
+SHAP explanations, and configured RAG/LLM or threat-intelligence services are added
+where required by the selected prototype modules.
+\end{sloppypar}
+
+\section{Component Integration}
+The extension communicates with FastAPI through HTTPS and sends Firebase ID tokens
+for protected requests. FastAPI verifies the token, checks authorization, validates
+the scan request, invokes the appropriate detector, and returns a common result shape.
+The dashboard uses the same API rather than connecting directly to MongoDB. Detector
+modules remain independently testable so that models, rules, integrations, and
+retention policies can be updated without changing the user interface.
+
+\section{Detector Implementation}
+URL detection normalizes inputs and extracts configured lexical and domain features.
+Page detectors use content scripts and supported browser APIs to inspect scripts,
+redirects, frames, notification prompts, and observable DOM behaviour. Download
+analysis uses content-based file identification, format-specific parsers, hash and
+reputation checks, resource limits, and isolated processing. Email screening is
+lightweight in the extension and uses RAG/LLM analysis only for an authorized detailed
+dashboard investigation. Playwright is reserved for controlled analysis and automated
+testing rather than indiscriminate collection of user credentials.
+
+\section{User Interface and Reports}
+The extension presents the risk level, reason, evidence, and available action without
+overwhelming non-technical users. The dashboard provides login, URL/QR/email/file scan
+forms, detection history, threat reports, analytics, and troubleshooting information.
+Reports distinguish detection from prevention and identify incomplete analysis,
+unsupported formats, timeouts, and unavailable browser capabilities.
+
+\section{Testing and Evaluation}
+Unit tests will validate feature extraction, parsers, rules, risk decisions, token
+verification, authorization, and privacy filtering. Integration tests will cover
+extension-to-API communication, MongoDB ownership checks, model invocation, and
+report generation. Browser tests will use safe synthetic pages, controlled phishing
+fixtures, and synthetic credentials. Evaluation will report precision, recall,
+false-positive and false-negative rates, latency, resource consumption, model
+generalization, and confirmed versus requested protective actions.
+
+\section{Deployment and Operations}
+The extension and dashboard require configured HTTPS endpoints, Firebase settings,
+MongoDB access restricted to backend services, model artifacts, and external-service
+credentials stored outside client code. Logging will contain detection evidence and
+actions without unnecessary sensitive content. Configuration will define file-size and
+archive limits, timeouts, retention, supported browsers, and the policy for warning,
+cancellation, quarantine, or release.

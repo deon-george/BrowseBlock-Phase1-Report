@@ -1,0 +1,50 @@
+\chapter{Methodology}
+
+\section{Research and Requirements Method}
+The project requirements were derived from the BrowseBlock Software Requirements
+Specification and organized around ten observable browser-threat categories. For each
+category, the methodology identifies the stimulus, observable evidence, analysis
+method, risk decision, user response, logging requirements, and browser limitations.
+The literature review was used to select practical techniques and to avoid transferring
+reported research accuracy directly to the proposed system.
+
+\section{System Overview}
+BrowseBlock is a modular security platform with two client-facing surfaces. A
+Manifest V3 browser extension provides real-time monitoring and protective feedback.
+A React and Tailwind CSS dashboard provides authenticated manual scans, detailed
+reports, analytics, and history. A Python FastAPI backend validates requests, coordinates
+detectors and AI services, and mediates all database access. Firebase Authentication
+handles identity, while MongoDB stores authorized application records rather than
+passwords or authentication secrets.
+
+\section{Detection Methodology}
+\begin{itemize}
+\item \textbf{URL and QR analysis}: normalize URLs, extract domain and lexical features,
+and classify with XGBoost. Decode supported QR codes and analyze their URL payloads.
+\item \textbf{Page and script analysis}: inspect observable scripts, DOM sources and
+sinks, redirects, frames, overlays, WebAssembly, workers, and notification prompts.
+\item \textbf{Credential and email analysis}: identify deceptive forms and external
+script domains; use Random Forest for initial email screening and RAG/LLM analysis for
+authorized detailed investigations.
+\item \textbf{File analysis}: identify file types from content, calculate SHA-256 hashes,
+extract format-specific static features, apply rules and XGBoost, and never execute
+untrusted content.
+\item \textbf{Extension analysis}: compare available permissions and host access with
+observable API use and page changes, treating mismatches as risk indicators.
+\end{itemize}
+
+\section{Risk and Evidence Model}
+Every detector produces a normalized result containing a risk level, evidence
+indicators, analysis completeness, timestamp, and protective action. The levels are
+Safe, Suspicious, and High-risk. A failed parser, timeout, unsupported format, or
+unavailable browser event is represented as incomplete analysis rather than a safe
+verdict. Warnings and blocks are issued only when the relevant browser capability and
+confidence threshold support the action.
+
+\section{Privacy and Security Method}
+Only data required for detection, auditing, and configured retention is collected.
+Actual passwords are never captured, and email or file content is submitted for deeper
+analysis only with user authorization. HTTPS protects deployed communication. Firebase
+ID tokens are verified server-side by FastAPI, authorization is enforced before
+MongoDB reads or writes, and API credentials and database connections are never
+exposed to extension or dashboard clients.

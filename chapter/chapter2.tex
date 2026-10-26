@@ -1,0 +1,98 @@
+\chapter{Literature Review}
+\setcounter{equation}{0}
+
+\section{URL and Fake QR Phishing}
+Misiek and Hyla proposed an XGBoost URL phishing detector using URL features and
+cross-dataset validation. The study reported 90.7\% accuracy on a custom dataset and
+77.84\% average accuracy across three datasets, showing both the efficiency of XGBoost
+and the difficulty of generalizing to unseen data. BrowseBlock adopts the same direction:
+URLs are normalized, features such as length, subdomains, IP usage, special characters,
+and suspicious keywords are extracted, and QR-decoded URLs are passed through the same
+pipeline. Continuous retraining and evaluation on current datasets are necessary.
+
+\section{HTML and JavaScript Redirects}
+Zeng et al.'s ``Hidden Path'' reconstructs malicious HTTP, JavaScript, and HTML redirect
+chains using a dynamic Chrome crawler and browser performance logs. It demonstrates that
+intermediary domains, delayed navigation, fabricated clicks, and iframe techniques can
+conceal a final destination. BrowseBlock adapts this idea to a lightweight extension by
+observing supported navigation events, evaluating destinations with the URL detector,
+and warning or interrupting high-risk navigation. A complete chain cannot be claimed
+when browser APIs do not expose every event.
+
+\section{Malicious File Downloads}
+The Hidost system by Šrndić and Laskov demonstrates static machine-learning detection
+of malicious PDF and SWF files without executing them. Its structural feature extraction
+and feature consolidation are relevant to BrowseBlock's download pipeline. BrowseBlock
+extends the principle to EXE, ZIP, PDF, DOC, and DOCX files using content-based type
+identification, format-specific static analysis, SHA-256 hashes, deterministic rules,
+reputation checks, and XGBoost. Untrusted files must remain unexecuted and analysis
+must be isolated and resource-limited.
+
+\section{Email Phishing}
+Akinyelu and Adewumi classify phishing email with Random Forest using features such as
+IP-based URLs, link-text mismatches, suspicious keywords, link count, JavaScript, and
+sender-domain differences. BrowseBlock uses this work for lightweight extension
+screening, while also incorporating available SPF, DKIM, and DMARC signals. Detailed
+dashboard analysis adds RAG retrieval, URL extraction, URL-model results, and LLM
+assessment of urgency, impersonation, social engineering, and credential harvesting.
+The reported 2014 accuracy cannot be assumed for current attacks; fresh evaluation is
+required.
+
+\section{Cryptojacking}
+Saad and Mohaisen studied more than 5,700 cryptojacking-associated websites using
+static JavaScript features and dynamic indicators such as CPU consumption, battery
+drain, and mining-server WebSocket communication. Their results support combining
+script, WebAssembly, worker, network, and resource-usage evidence. BrowseBlock uses
+these indicators to warn users or block suspicious resources where supported, while
+testing against obfuscated miners and legitimate resource-intensive applications.
+
+\section{Cross-Site Scripting}
+Pan and Mao combined static analysis with dynamic symbolic execution to detect
+DOM-sourced XSS in browser-extension scripts, identifying 58 previously unknown
+vulnerabilities in 154,065 scripts. BrowseBlock applies a lighter event-driven version:
+AST and pattern checks identify suspicious sources and sinks such as \texttt{eval()},
+while selective DOM and request monitoring distinguishes reflected, stored, and
+DOM-based XSS. Suspicious DOM changes alone do not prove that execution was prevented,
+so the system must report the actual protective action.
+
+\section{Clickjacking}
+ClickProtect detects invisible iframe overlays, deceptive clickable elements, and fake
+cursors, then reveals elements or warns users. These techniques motivate BrowseBlock's
+inspection of iframe visibility, positioning, stacking, and interaction structures.
+Because transparent elements and custom cursors can be legitimate, multiple indicators
+must be correlated and browser-level controls such as CSP \texttt{frame-ancestors} and
+\texttt{X-Frame-\allowbreak Options} should complement extension detection.
+
+\section{Browser Extension Abuse}
+CPDetector compares declared Chrome permissions with API usage and host access. Its
+analysis of 199,058 extensions found excessive permissions in 49.3\% of the dataset,
+illustrating the privacy risk of unnecessary cookies, history, and broad host access.
+BrowseBlock uses permission mismatches, manifest metadata, webpage tampering, and
+suspicious script injection as risk indicators. Excessive permission is not by itself
+proof of malicious behaviour, so dynamic evidence and context remain important.
+
+\section{Browser Notification Scams}
+Subramani et al.'s PushAdMiner instrumented Chromium to collect notification permissions,
+service-worker activity, notification content, network requests, and post-click URLs.
+Among 21,541 notifications, the study identified 572 campaigns and found 51\% of
+advertisements malicious. BrowseBlock combines notification text, origin, destination
+URLs, redirects, urgency, fake security alerts, and reward/payment language instead of
+relying only on blocklists.
+
+\section{Credential Harvesting}
+Playwright provides browser automation, JavaScript execution, network observation,
+locators, and repeatable interaction workflows. BrowseBlock uses it primarily for
+controlled analysis, testing, and dataset generation: suspicious pages can be loaded
+with synthetic credentials, login forms and password fields can be inspected, and
+submission destinations can be compared with the displayed identity. Production
+monitoring remains lightweight and event-driven, and the system must never collect
+real passwords or treat Playwright alone as proof of maliciousness.
+
+\section{Research Gap}
+The reviewed work provides strong techniques for individual threats but generally
+focuses on one category, offline analysis, or heavyweight instrumentation. BrowseBlock
+addresses the integration gap by combining local real-time signals with backend
+analysis, risk explanations, authorized history, and explicit handling of browser/API
+limitations. Its evaluation must measure each module independently as well as the
+combined system, with particular attention to false positives, privacy, latency, and
+whether an advertised protective action was actually enforced.

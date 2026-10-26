@@ -1,0 +1,43 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                               % 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{dmathesis}
+%% uncommand the following line to print equation labels next to
+%% equation numbers. 
+% \usepackage{showlabel} % Enable only while debugging labels and citations.
+
+%% The following is to control the format of your thesis
+\input{format}
+
+%% File to be included while running latex.
+\includeonly{chapter/chapter1,chapter/chapter2,chapter/chapter3%
+                 ,chapter/chapter4,chapter/chapter5,chapter/chapter6,conclusion,ref,mission,append}
+
+\begin{document}
+%% Front page of thesis
+\input{frontpage}
+
+%% Main text
+% set page number starts from 1
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%% To ensure the equation counter works correctly
+\eqlabon
+\eqlaboff
+
+\include{chapter/chapter1}
+\include{chapter/chapter2}
+\include{chapter/chapter3}
+\include{chapter/chapter4}
+\include{chapter/chapter5}
+\IfFileExists{chapter/chapter6.tex}{%
+    \include{chapter/chapter6}%
+}{%
+    \PackageWarning{thesis}{Missing chapter/chapter6.tex; chapter 6 omitted}%
+}
+\include{conclusion}
+\include{ref}
+\include{mission}
+\include{append}
+\end{document}

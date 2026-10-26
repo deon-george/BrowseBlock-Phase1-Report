@@ -1,0 +1,187 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   This is frontpage.tex file needed for the dmathesis.cls file.  You   %
+%  have to  put this file in the same directory with your thesis files.  %
+%            
+% 
+%                 No Copyright for this file                             % 
+%                 Save your time and enjoy it                            % 
+%                                                                        % 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%           The title page           %%%%%%%%%%%%%%%%%%%%%%%  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\pagenumbering{roman}
+%\pagenumbering{arabic}
+
+\setcounter{page}{1}
+
+\fancypagestyle{plain}{%
+
+\fancyfoot[R]{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+}
+
+\newpage
+
+\thispagestyle{empty}
+\begin{center}
+ 
+  {\Large \bf PROJECT PHASE I REPORT}
+
+ON\\
+  {\Large \bf BROWSEBLOCK}\vspace{1.2 cm}
+
+  {\large Submitted by\\{ \bf Deon George (SJC23CS086)}\\
+    { \bf Amal Kurian Royce (SJC23CS037)}\\
+   { \bf Maria Royce (SJC23CS159)}\\
+   { \bf Melbin K Thomas (SJC23CS164)}}\\[-0.6mm]
+  
+\vspace*{0.4 cm}
+  {\large to\\[-0.6mm] the APJ Abdul Kalam Technological University\\[-0.6mm] in partial fulfillment of the requirements for the award of the degree\\[-0.6mm] of\\[-0.6mm] Bachelor of Technology\\[-0.6mm] in\\[-0.6mm] {\bf Computer Science and Engineering}}
+  \vspace*{2cm}
+  
+  % Put your university logo here if you wish.
+   \begin{center}
+   \includegraphics{images/SJCET_logo.jpg}
+   \end{center}
+
+  {\large {\bf Department of Computer Science and Engineering}\\
+          [-3mm] {\bf St. Joseph's College of Engineering and Technology, Palai}
+          {\bf (Autonomous)}\\
+           [1mm]  October : 2026}
+
+\end{center}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%           The abstract page         %%%%%%%%%%%%%%%%%%%%  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\thispagestyle{empty}
+\addcontentsline{toc}{chapter}{\numberline{}Declaration}
+\begin{center}
+  \vspace*{1cm}
+  \textbf{\large Declaration}
+\end{center}
+We undersigned hereby declare that the project phase 1 report on \textbf{“BrowseBlock: AI Browser Extension for Real-Time Browser-Based Attack Detection and Prevention”}, submitted for partial fulfillment of the requirements for the award of degree
+of Bachelor of Technology of the APJ Abdul Kalam Technological University, Kerala, is a bonafide
+work done by us under the supervision of\textbf{ the Project Guide}. This submission
+represents our ideas in our own words and where ideas or words of others have been included. We have
+adequately and accurately cited and referenced the original sources. We also declare that we have adhered to
+ethics of academic honesty and integrity and have not misrepresented or fabricated any data or idea or
+fact or source in our submission. We understand that any violation of the above will be a cause for
+disciplinary action by the institute and or the University and can also evoke penal action from the sources
+which have thus not been properly cited or from whom proper permission has not been obtained. This
+report has not been previously formed the basis for the award of any degree, diploma or similar title of
+any other University.\vspace{1.3 cm}\\
+{\bf Name and Signature of Student}\vspace{0.5cm}\\
+  \textbf{\bf Deon George (SJC23CS086)}\\
+{\bf Amal Kurian Royce (SJC23CS037)}\\
+{\bf Maria Royce (SJC23CS159)}\\
+{\bf Melbin K Thomas (SJC23CS164)}\\
+    \vspace{2 cm}\\
+Place: Choondacherry\\
+Date: 17-10-2026 
+ 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%% The dedication page, of you have one  %%%%%%%%%%%%%%%%%%%%  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\thispagestyle{empty}
+\begin{center}
+\normalsize{ST. JOSEPH’S COLLEGE OF ENGINEERING AND TECHNOLOGY, PALAI}\\[0.5cm]
+\normalsize
+ { DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING}\\[1.0cm]% Put your university logo here if you wish.
+   \begin{center}
+   \includegraphics{images/SJCET_logo.jpg}
+   \end{center}
+{\large CERTIFICATE}\\[1.5cm]
+\end{center}
+\normalsize 
+\begin{sloppypar}
+This is to certify that the report entitled {\bf ``BrowseBlock: AI Browser Extension for Real-Time Browser-Based Attack Detection and Prevention''} submitted by {\bf Deon George (SJC23CS086), Amal Kurian Royce (SJC23CS037), Maria Royce (SJC23CS159), and Melbin K Thomas (SJC23CS164)} to the APJ Abdul Kalam Technological University in partial fulfillment of the requirements for the award of the Degree of Bachelor of Technology in Computer Science and Engineering is a bonafide record of the project work carried out by them under my guidance and supervision.\par\vspace{1.3 cm}
+\end{sloppypar}
+\begin{tabular}{p{0.45\textwidth}p{0.45\textwidth}}
+\textbf{Project Guide} & \textbf{Project Coordinator}\\
+Project Guide & Prof. Smitha Jacob\\
+Assistant Professor & Assistant Professor\\
+Department of CSE & Department of CSE
+\end{tabular}
+\par\vspace{1.3 cm}
+
+\begin{tabular}{p{0.45\textwidth}p{0.45\textwidth}}
+ & \textbf{Head of Department}\\
+ & Dr. Joby P P\\
+Place: Choondacherry & Professor \& Head\\
+Date: 17-10-2026 & Department of CSE
+\end{tabular}
+                
+
+
+\newpage
+\thispagestyle{empty}
+\addcontentsline{toc}{chapter}{\numberline{}Acknowledgement}
+
+\begin{center}
+
+  \vspace*{1cm}
+  \textbf{\large Acknowledgement}
+\end{center}
+
+
+The success of this Phase I project required the guidance and assistance of many people, and we are privileged to have received their support throughout its completion. We sincerely thank everyone whose supervision, encouragement, and technical assistance made this work possible.\vspace{0.2cm}
+\\We would like to express our respect and gratitude to the management of St. Joseph's College of Engineering and Technology for providing us with the opportunity and platform to work on this project.\vspace{0.2cm}
+\\A special word of thanks goes to our beloved Principal, {\bf Dr. V. P. Devassia}, for providing invaluable support and necessary facilities to carry out this project.\vspace{0.2cm}
+\\We are extremely indebted to \textbf{Dr. Joby P. P}, Professor \& Head of the Department of Computer Science and Engineering, for his valuable suggestions and encouragement throughout the course of this project work.\vspace{0.2cm}
+\\We would also like to express our gratitude to our project coordinator, \textbf{Prof. Smitha Jacob}, Associate Professor in the Department of Computer Science and Engineering, for her valuable suggestions and guidelines during the entire duration of this project. We are truly appreciate her contributions and technical support in preparing this report.\vspace{0.2cm}
+\\Our heartfelt thanks go to our project guide, \textbf{Prof. Bino Thomas}, Assistant Professor in the Department of Computer Science and Engineering, for her keen interest, guidance, and technical support throughout the project.\vspace{0.2cm}
+\\We are thankful and fortunate enough to have received constant encouragement, support, and guidance from all the staff members of the Department of Computer Science and Engineering. Their assistance played a crucial role in the successful completion of our Project Phase 1 work.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%           The abstract page         %%%%%%%%%%%%%%%%%%%%  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\thispagestyle{empty}
+\addcontentsline{toc}{chapter}{\numberline{}Abstract}
+\begin{center}
+  \vspace*{1cm}
+  \textbf{\large Abstract}
+\end{center}
+BrowseBlock is an AI/ML-powered browser security platform designed to detect and help prevent browser-based attacks in real time. A Manifest V3 Chromium extension monitors supported navigation, webpage scripts, redirects, frames, notifications, downloads, email content, and observable extension activity. A React and Tailwind CSS dashboard supports authenticated manual scans of URLs, QR codes, emails, and files, together with detection history, threat reports, and explanations. The FastAPI backend coordinates XGBoost URL and file analysis, Random Forest email screening, static security rules, QR decoding, and RAG/LLM-based detailed email analysis. Firebase Authentication verifies user identity and MongoDB stores authorized application records without storing passwords. The proposed system covers URL and fake-QR phishing, cross-site scripting, credential harvesting, malicious redirects, clickjacking, cryptojacking, malicious downloads, email phishing, notification scams, and browser-extension abuse. Each result is classified as Safe, Suspicious, or High-risk and includes evidence, analysis completeness, and the actual protective action. The Phase I work establishes the requirements, architecture, methodology, literature foundation, and evaluation plan for a privacy-conscious security layer that complements existing browser and antivirus protections.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%    tableofcontents, listoffigures and listoftables       %%%%%%%%%
+%%%%%%%%        Command if you do not have  them                  %%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\thispagestyle{empty} % Removes page number from title page
+
+\tableofcontents
+\listoffigures
+\addcontentsline{toc}{chapter}{\numberline{}List of Figures}
+\clearpage
+
+\thispagestyle{empty} % Removes page number from the page with list of figures
+
+\printnomenclature
+\addcontentsline{toc}{chapter}{\numberline{}List of Abbreviations}
+\clearpage
+
+\nomenclature{}{\hspace{1.5cm}}
+\nomenclature{NLP}{\hspace{1.5cm}Natural Language Processing}
+\nomenclature{LLM}{\hspace{1.5cm}Large Language Model}
+\nomenclature{RAG}{\hspace{1.5cm}Retrieval-Augmented Generation}
+\nomenclature{API}{\hspace{1.5cm}Application Programming Interface}
+\nomenclature{GUI}{\hspace{1.5cm}Graphical User Interface}
+\nomenclature{IDE}{\hspace{1.5cm}Integrated Development Environment}
+\nomenclature{SDK}{\hspace{1.5cm}Software Development Kit}
+\nomenclature{JSON}{\hspace{1.5cm}JavaScript Object Notation}
+\nomenclature{OS}{\hspace{1.5cm}Operating System}
+\nomenclature{DB}{\hspace{1.5cm}Database}
+\nomenclature{URL}{\hspace{1.5cm}Uniform Resource Locator}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%   END OF FRONT PAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

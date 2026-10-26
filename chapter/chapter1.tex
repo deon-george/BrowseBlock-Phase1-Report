@@ -1,0 +1,58 @@
+\setcounter{equation}{0}
+\chapter{Introduction}
+
+\section{Background}
+Internet users increasingly encounter threats through ordinary browsing activities:
+fraudulent URLs, QR-code phishing, deceptive login pages, malicious redirects, injected
+scripts, unsafe downloads, and abusive browser extensions. Existing browser security
+features and antivirus products provide important protection, but they do not always
+explain why a page or action is suspicious, and many threats depend on context that is
+only visible while the user is browsing. The literature reviewed for this project shows
+that machine-learning classifiers, static and dynamic analysis, browser instrumentation,
+and threat-intelligence services can each identify useful indicators, but no single
+technique provides complete coverage.
+
+\section{Problem Statement}
+Users need a lightweight and understandable security layer that can observe supported
+browser activity, combine multiple indicators, and provide timely warnings without
+collecting unnecessary private content. Existing approaches are commonly specialized:
+URL classifiers do not explain page behaviour, blocklists miss new campaigns, and
+heavyweight analysis cannot run continuously in a browser extension. The problem
+addressed by BrowseBlock is therefore the design of a unified, explainable system that
+detects and helps prevent several browser-based attacks while clearly distinguishing a
+completed protection action from an incomplete or unavailable analysis.
+
+\section{Objectives and Scope}
+The project aims to design an AI/ML-powered browser security platform consisting of a
+Manifest V3 Chromium extension and a React web dashboard backed by FastAPI. Its scope
+includes URL and fake-QR phishing, cross-site scripting, credential harvesting,
+HTML/JavaScript redirects, clickjacking, cryptojacking, malicious file downloads, email
+phishing, browser notification scams, and browser-extension abuse. The system will
+classify activity as Safe, Suspicious, or High-risk, explain the evidence used, warn or
+restrict risky activity where browser capabilities permit, and store authorized scan
+history and reports. It is an additional security layer, not a replacement for antivirus,
+browser security controls, or enterprise security systems.
+
+\section{Significance of the Study}
+BrowseBlock brings threat detection, explanation, and user action into one workflow.
+General users receive practical warnings, while analysts and organizations can review
+evidence and historical reports. The design also treats privacy and limitations as
+security requirements: passwords are never collected for detection, sensitive data is
+minimized, authentication is handled by Firebase, and MongoDB access is restricted to
+authorized backend operations.
+
+\section{Proposed Solution}
+The extension performs lightweight, event-driven monitoring of navigation, page
+content, scripts, frames, notifications, downloads, and available extension activity.
+The FastAPI service coordinates models and deeper analysis, including XGBoost URL and
+file classification, Random Forest email screening, static file analysis, and RAG/LLM
+email analysis. The dashboard accepts manual URL, QR, email, and file scans and presents
+the resulting risk level, indicators, recommended action, and analysis limitations.
+
+\section{Expected Outcomes}
+The Phase I outcome is a validated requirements and design foundation for a modular
+BrowseBlock prototype. It defines the ten detection modules, their interfaces, data
+flows, security constraints, and evaluation needs. Phase II will implement the selected
+prototype modules, train and validate models on representative data, test browser
+compatibility, and measure precision, recall, false positives, latency, and the
+reliability of warning, blocking, quarantine, and logging actions.

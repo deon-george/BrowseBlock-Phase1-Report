@@ -1,0 +1,44 @@
+\chapter{System Study}
+
+\section{Existing System}
+Current protection is distributed among browser warnings, URL blocklists, antivirus
+software, email filters, and security extensions. These tools are valuable but often
+operate independently, provide limited explanations, or cannot inspect all modern
+browser behaviours. Blocklists can miss new campaigns, while heavyweight crawlers and
+dynamic analysis are unsuitable for continuous protection on every user page.
+
+\section{Proposed System}
+BrowseBlock combines an event-driven extension with a centralized analysis service.
+The extension observes supported navigation, webpage, download, notification, and
+extension events. The dashboard enables deliberate scans and detailed review. The
+backend coordinates model inference, static analysis, RAG/LLM services, authentication,
+authorization, and persistence. This division keeps common checks lightweight while
+allowing expensive analysis only when evidence or user intent justifies it.
+
+\section{System Modules}
+\begin{enumerate}
+\item URL and fake-QR phishing detection
+\item Cross-site scripting detection and prevention
+\item Credential-harvesting detection
+\item HTML/JavaScript redirect analysis
+\item Clickjacking detection
+\item Cryptojacking detection
+\item Malicious file-download analysis
+\item Email phishing detection
+\item Browser notification-scam detection
+\item Browser-extension abuse detection
+\end{enumerate}
+
+\section{Users and Roles}
+General users need concise warnings and practical recommendations. Organizational users
+need an additional protection layer for browsing, email, and downloads. Authorized
+security analysts review evidence and threat reports, while administrators manage
+configuration, services, and access. All role-specific dashboard data is subject to
+authenticated ownership or explicit authorization.
+
+\section{Constraints}
+Detection is bounded by Chromium permissions, browser API visibility, network
+availability, model quality, external service availability, and the evidence observable
+at runtime. BrowseBlock therefore complements rather than replaces existing endpoint
+security. Supported browsers, model versions, datasets, file limits, retention periods,
+and the first-prototype module set remain implementation decisions to be finalized.

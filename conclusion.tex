@@ -1,0 +1,18 @@
+\chapter*{Conclusion}
+\addcontentsline{toc}{chapter}{Conclusion}
+\thispagestyle{fancy}
+
+BrowseBlock addresses the need for an explainable, privacy-conscious security layer
+for browser activity. The requirements and literature study establish a unified
+architecture consisting of a Manifest V3 extension, React dashboard, FastAPI backend,
+machine-learning and rule-based detectors, Firebase Authentication, and MongoDB.
+They also define ten threat categories and clarify that warnings, blocking, quarantine,
+and analysis completeness must not be overstated.
+
+The Phase I work provides the foundation for implementation by connecting each module
+to evidence from prior research, explicit functional requirements, interfaces, and
+evaluation criteria. Phase II will implement and integrate the selected detectors,
+validate models on representative current data, test browser/API limitations, measure
+security and performance metrics, and conduct controlled usability testing. BrowseBlock
+will remain an additional protection layer and will communicate uncertainty wherever
+the browser or available evidence cannot support a complete decision.
