@@ -6,7 +6,7 @@ browser security platform for real-time browser-based attack detection and preve
 # BrowseBlock SRS
 
 > [!TIP]
-> 📑 [Click here to view the Full Literature Review (`review.pdf`)](./review.pdf)
+> 📑 [Click here to view the Full Literature Review (`review.pdf`)](./thesis.pdf)
 
 ## Project contents
 
