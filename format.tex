@@ -22,6 +22,11 @@
 \usepackage{titlesec}
 \usepackage{url}
 \usepackage{float}
+\usepackage{pdfpages}
+
+% Match the demo report's global LaTeX typography.
+\renewcommand{\familydefault}{\rmdefault}
+\renewcommand{\baselinestretch}{1.5}
 
 \titleformat{\chapter}[display]
 {\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
@@ -48,7 +53,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%                 Set line spacing = 1.5 here                   %%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\renewcommand{\baselinestretch}{1.5}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%                      Your fancy heading                       %%%%%%
 %%%%% For the final copy you need to remove '\bfseries\today' below %%%%%%
@@ -124,8 +128,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\poincare{Poincar\'e }
 \def\holder{H\"older }
-
-
 
 
 

@@ -1,0 +1,611 @@
+1. What is BrowseBlock?
+BrowseBlock is an AI-assisted browser security platform that detects potentially malicious websites, emails, downloaded files, and other browser-based threats, then warns users and explains why an activity was flagged.
+
+The idea is to make browser protection work during normal browsing instead of requiring users to investigate every suspicious item manually.
+
+For example, when a user opens a phishing link, BrowseBlock analyzes the URL, evaluates the available security evidence, and can display a warning before the user proceeds. When the user views a suspicious email, the system can analyze its content and links. When a file is downloaded, the system can assess its reputation and, where file contents are accessible through the scanning workflow, examine its structure.
+
+BrowseBlock covers ten threat categories:
+1. URL and QR-code phishing
+2. Cross-Site Scripting (XSS)
+3. Credential harvesting
+4. Malicious HTML and JavaScript redirects
+5. Clickjacking
+6. Cryptojacking
+7. Malicious file downloads
+8. Email phishing
+9. Browser notification scams
+10. Browser-extension abuse
+The key idea is that different threats require different detection methods. BrowseBlock combines machine learning, security rules, reputation checks, webpage analysis, email-authentication information, and language-model-assisted analysis instead of relying on a single algorithm.
+
+2. The complete technology stack
+Your finalized architecture consists of four main technologies or components.
+
+1. Browser Extension
+
+Primary protection and user-interaction layer
+
+Monitors supported browsing events, inspects accessible webpage information, initiates scans, and presents warnings. It is the component closest to the user.
+
+
+
+
+2. FastAPI Backend
+
+Central security-processing layer
+
+Receives supported analysis requests, validates the input, invokes detection modules and machine-learning models, coordinates relevant checks, and returns findings.
+
+
+
+
+3. React Dashboard
+
+Security results and explanation interface
+
+Displays analysis results, warnings, supporting evidence, and relevant details. Deeper email analysis can also be presented through the dashboard.
+
+
+
+
+4. Firebase Authentication
+
+Dashboard authentication
+
+Manages user sign-in and identity. Protected backend endpoints should verify Firebase ID tokens rather than trusting a user identity supplied by the frontend. 
+Firebase
+
+
+
+
+Important architecture decision: the finalized design does not use a separate MongoDB or other application database. Firebase Authentication is used for identity, not as a database for security scan history. Results can be returned to the frontend for the current interaction; persistent history requires a separate storage design.
+2.1 How the components communicate
+The basic flow is:
+
+Browser event → Extension → FastAPI → Detection module(s) → Result → Extension or React dashboard
+
+Not every operation needs the backend. Lightweight checks could be performed locally, depending on the implementation, while model inference, RAG-based analysis, and other centralized operations can be handled by FastAPI.
+
+FastAPI is suitable for providing structured API endpoints, input validation, and automatically generated API documentation through OpenAPI. 
+FastAPI
+
+
+3. How BrowseBlock works during normal browsing
+The extension is event-driven. It does not need to execute all ten detectors whenever a user opens any website. Instead, it starts the appropriate analysis based on the event.
+User performs an action
+Visits a URL, views an email, scans a QR code, or downloads a file
+
+
+Browser extension identifies the event
+Collects the information permitted by the relevant browser APIs and extension permissions
+
+
+Relevant detector runs
+URL classifier, email analyzer, file analyzer, or webpage-security checks
+
+
+Evidence is evaluated
+Combines model predictions, security rules, reputation checks, and other available indicators
+
+
+Low observed risk
+
+
+High risk
+
+
+Uncertain
+
+
+
+The appropriate action depends on the evidence and configured policy. A successful scan does not guarantee that an item is safe.
+
+For example, when a user navigates to a URL, the URL detector assesses the destination. If the result is suspicious, the extension can show a warning or interstitial. If the URL appears low risk, browsing can continue normally.
+
+The ability to prevent navigation before a page loads depends on the browser, extension APIs, permissions, and the precise blocking mechanism. A warning displayed after navigation is not equivalent to prevention before execution.
+
+4. The ten detection modules in detail
+4.1 URL and QR-code phishing detection
+This is one of the central modules of BrowseBlock.
+A. URL phishing detection
+Purpose: Identify URLs that may lead to phishing websites.
+
+A phishing URL may impersonate a legitimate website using misleading domain names, unusual URL structures, or deceptive path components.
+
+For example, a URL might include the name of a well-known bank in a subdomain even though the actual registered domain belongs to someone else.
+
+The URL detector works through the following stages:
+
+Step 1 — Capture the URL
+
+When the user navigates to a URL or a URL is extracted from an email or QR code, the extension initiates analysis.
+
+Step 2 — Parse the URL
+
+The system separates the URL into components, including:
+- Protocol, such as HTTP or HTTPS.
+- Hostname and domain structure.
+- Subdomains.
+- Path and query parameters.
+- URL length and character patterns.
+Step 3 — Extract features
+
+The feature extractor converts the URL into values that the model can process.
+
+Possible features include URL length, number of subdomains, IP-address usage, unusual symbols, suspicious hostname patterns, and HTTPS-related characteristics. The exact feature list must match the trained model.
+
+Step 4 — Run the XGBoost model
+
+BrowseBlock uses XGBoost for URL phishing classification. XGBoost is a gradient-boosting algorithm that combines many decision trees to learn patterns from labelled examples.
+
+During training, it learns relationships between URL features and phishing or legitimate labels. During inference, it uses the learned relationships to classify an unseen URL.
+
+Step 5 — Evaluate the result
+
+The system receives the model prediction and combines it with any available reputation information or other relevant evidence.
+
+Step 6 — Warn the user when appropriate
+
+The extension can display the classification and an explanation of the suspicious indicators.
+B. Why use XGBoost?
+URLs can be represented through numerical and categorical features. Tree-based machine-learning algorithms are useful for learning relationships between such features without requiring the complete webpage to be rendered as an image.
+
+However, model quality depends on the dataset, training procedure, feature consistency, and evaluation method. XGBoost does not automatically know whether a URL is malicious; it learns from the examples and labels provided during training.
+C. QR-code phishing detection
+A QR code is not automatically malicious. The risk usually comes from its embedded content, such as a URL that leads to a fraudulent website.
+
+BrowseBlock reuses the URL detector rather than requiring an entirely separate phishing classifier for QR codes.
+
+The process is:
+1. The user encounters a QR code and invokes the supported scan interaction.
+2. The extension obtains the QR image or accessible QR content.
+3. A QR-decoding library extracts the encoded value.
+4. The system checks whether the decoded value is a URL.
+5. The URL is passed through the existing URL-analysis module.
+6. The result is shown to the user.
+Example: A QR code displayed on a fake parcel-delivery notice leads to a credential-stealing page. BrowseBlock decodes the URL and analyzes it before the user follows the link.
+
+The QR-code module therefore performs extraction, while the URL module performs the main phishing classification.
+
+4.2 Cross-Site Scripting detection
+Purpose: Detect indicators of Cross-Site Scripting (XSS) and potentially unsafe JavaScript execution.
+
+XSS can occur when untrusted input is interpreted as executable HTML or JavaScript rather than being handled safely as data.
+
+Consider this example:
+const input = location.search;
+document.body.innerHTML = input;
+
+
+The URL query string is the source of the untrusted data. Assigning that data to innerHTML creates a potentially dangerous sink, because the browser interprets the value as HTML.
+
+BrowseBlock's XSS module can be designed around source-to-sink analysis and related indicators.
+How the detection works
+1. Inspect accessible webpage code or runtime information.
+2. Identify potential sources of untrusted input, such as URL parameters or external messages.
+3. Identify potentially dangerous sinks, such as unsafe innerHTML usage or calls to eval().
+4. Examine the available evidence linking the input to the dangerous operation.
+5. Check for signs of appropriate validation, encoding, or sanitization.
+6. Flag suspicious flows and present the relevant evidence.
+Source-to-sink analysis means following untrusted data from the place where it enters a program to a place where it could cause harm.
+
+A sanitizer or other appropriate safety mechanism may reduce the risk, depending on the context. OWASP recommends safe DOM handling, context-appropriate output encoding, and suitable HTML sanitization rather than relying on one generic filtering rule. 
+OWASP Cheat Sheet Series
+
+Important limitation
+A simple extension that searches for suspicious JavaScript strings is performing heuristic detection, not complete source-to-sink analysis.
+
+Full taint tracking across arbitrary JavaScript applications is more complex. BrowseBlock must describe the XSS capability according to the actual analysis technique implemented.
+
+4.3 Credential-harvesting detection
+Purpose: Identify pages that may be designed to steal login credentials or other sensitive information.
+
+Credential-harvesting pages frequently imitate legitimate login screens. A user might see a page that resembles a bank, university, email provider, or online service while submitting credentials to an unrelated destination.
+How the detection works
+The extension inspects accessible webpage information and extracts indicators such as:
+- Password and username input fields.
+- Form submission destinations.
+- Domain and page URL.
+- Available page text and branding indicators.
+- Suspicious redirects.
+- Inconsistencies between the displayed identity and the submission destination.
+The detector then combines the indicators to determine whether the form appears suspicious.
+
+Example: A webpage displays a university login form but submits the credentials to an unrelated external domain. This mismatch may contribute to a high-risk classification.
+
+The presence of a password field alone does not prove that a page is malicious. Legitimate websites also collect passwords, so the module needs contextual evidence.
+
+4.4 HTML and JavaScript redirect detection
+Purpose: Identify unexpected navigation changes that may direct users to malicious websites.
+
+A redirect can occur for legitimate reasons, such as sending a user to an authentication provider. However, attackers can also use redirects to conceal the final destination of a phishing or malware-delivery page.
+How the detection works
+1. Monitor relevant browser navigation events.
+2. Identify the requested URL and subsequent destination changes.
+3. Detect unexpected redirect sequences or suspicious destination patterns where supported.
+4. Inspect available HTML or JavaScript indicators, if the extension can access them.
+5. Submit the final destination to the URL phishing detector.
+6. Combine redirect evidence with the destination's risk assessment.
+7. Warn the user when the configured policy is triggered.
+This module complements URL phishing detection because it focuses on how the browser reaches a destination, while the URL classifier focuses on whether a destination appears suspicious.
+
+A browser navigation listener and a webpage content script provide different levels of visibility. The implementation should not claim that it detects every JavaScript-driven redirect unless the relevant navigation and script mechanisms are actually covered.
+
+4.5 Clickjacking detection
+Purpose: Detect indicators of attempts to deceive users into interacting with unintended webpage elements.
+
+Clickjacking is a form of user-interface redressing. An attacker may use overlapping elements, hidden frames, or deceptive layouts to make a user activate an action different from the one they intended.
+How the detection works
+BrowseBlock can inspect accessible page structure and look for indicators such as:
+- Suspicious overlays.
+- Unusual frame structures.
+- Potentially deceptive positioning or layering.
+- Unexpected interactive regions.
+- Relevant frame-security information, where available.
+The detector evaluates these observations and reports suspicious patterns.
+
+For example, a page may appear to show a harmless button while an overlapping frame places a different action beneath the user's click.
+Important limitation
+A legitimate website can also use overlays, modals, and iframes. Additionally, browser cross-origin restrictions prevent an extension from freely inspecting all content inside every frame.
+
+Consequently, DOM heuristics can identify suspicious indicators but cannot guarantee the detection of all clickjacking attacks.
+
+4.6 Cryptojacking detection
+Purpose: Identify indicators that a webpage may be using the user's computing resources for unauthorized cryptocurrency mining.
+
+Cryptojacking occurs when a website or malicious script uses a user's processing resources for cryptocurrency mining without appropriate authorization or consent.
+How the detection works
+Potential indicators include:
+- Known mining-related script patterns.
+- Requests to known mining-related resources.
+- Suspicious scripts associated with browser-based mining.
+- Other observable behaviour supported by the detection mechanism.
+The detector combines the available indicators and reports suspicious activity.
+
+Example: A webpage loads a recognizable mining script and connects to an associated mining resource without an expected user-facing reason. These indicators may justify further investigation.
+Important limitation
+High CPU usage alone does not prove cryptojacking. Games, video processing, and other legitimate websites can also perform intensive calculations.
+
+A normal browser extension may also have limited access to per-page resource usage and runtime behaviour. The system should explain exactly which indicators it uses instead of claiming unrestricted monitoring.
+
+4.7 Malicious file-download detection
+Purpose: Assess downloaded files and identify known or potentially malicious content.
+
+This module combines different kinds of evidence because no single file property can reliably distinguish every safe file from every malicious one.
+Step 1 — Detect the download
+The extension monitors supported browser download events. Depending on the browser API and permissions, it can obtain information such as the download URL, filename, MIME type, progress, and other metadata.
+
+For Chrome extensions, the Downloads API requires the appropriate permission and exposes download-related information. It does not, by itself, constitute a complete antivirus scanning engine. 
+Chrome for Developers
+
+Step 2 — Obtain the file contents when permitted
+Metadata alone cannot provide complete file-content analysis. If BrowseBlock needs to calculate a hash or inspect the file's internal structure, it requires a permitted mechanism for accessing the file bytes.
+
+This might involve a controlled user-approved scanning workflow or an appropriate local integration.
+Step 3 — Calculate the SHA-256 hash
+SHA-256 creates a cryptographic fingerprint of the file's exact contents.
+
+The resulting value is compared with a trusted database of known malicious hashes, if that database is integrated.
+- A match against a confirmed malicious sample is strong evidence of a known threat.
+- No match means the file is not identified by that particular hash check.
+- An unknown hash does not mean the file is safe.
+Step 4 — Check file reputation
+Where a trusted threat-intelligence service is available, BrowseBlock can look up the hash or other supported indicators.
+
+The service might identify previously reported malware, suspicious files, or known distribution sources.
+
+A reputation lookup requires a real integrated source; calculating SHA-256 alone does not provide a reputation database.
+Step 5 — Inspect the file structure
+Static analysis examines file characteristics without executing the file.
+
+Depending on the supported format, this can include:
+- Actual file type and signature.
+- Extension and file-type mismatches.
+- File size and structural properties.
+- Executable headers.
+- Imported functions.
+- Entropy and other format-specific features.
+- Suspicious document or script structures.
+Not every feature applies to every file format. A PE-header feature is relevant to supported Windows executables, not automatically to PDFs, images, or every other download type.
+Step 6 — Apply a trained classifier
+If BrowseBlock has a trained file-classification model, the extracted features can be passed to that model.
+
+The project design identifies XGBoost as a suitable classifier for supported malicious-file features. However, the file model must actually be trained and integrated before it can be presented as a working feature.
+Step 7 — Combine the findings
+The file module combines the available evidence: hash-reputation results, file structure, static features, classifier output, and download-source risk.
+
+The system then applies its configured policy:
+- High risk: Block or quarantine when the evidence and mechanism justify it.
+- Suspicious: Warn the user and show the reasons.
+- Low observed risk: Allow the file while avoiding a guarantee of safety.
+- Scan unavailable: Report that the file could not be fully assessed rather than marking it safe.
+Downloaded files should not be executed merely to determine whether they are malicious. Any dynamic testing requires a properly isolated analysis environment.
+
+4.8 Email phishing detection
+Email phishing is one of the more complex BrowseBlock modules because a suspicious message can involve several different indicators.
+
+A phishing email may contain deceptive language, an impersonated sender, an unusual reply-to address, malicious links, or misleading attachment references. No single indicator establishes every case.
+
+BrowseBlock's proposed email pipeline combines Random Forest screening, URL analysis, email-authentication results, RAG, an LLM, and a fusion layer.
+Stage 1 — Detect the email interaction
+When the user selects or views a message in a supported email interface, the extension initiates the relevant checks.
+
+The available information depends on the email platform, browser permissions, and integration. A browser extension cannot assume it can retrieve every raw email header from every webmail service.
+Stage 2 — Extract accessible email information
+The module collects permitted information, such as:
+- Subject and message text.
+- Sender information.
+- Reply-to information, where accessible.
+- Embedded links.
+- Available authentication results.
+- Other supported indicators.
+The extracted information is prepared for analysis.
+Stage 3 — Initial screening with Random Forest
+A Random Forest classifier performs an initial assessment based on the features used during training.
+
+Possible features include suspicious phrases, urgency indicators, sender-related inconsistencies, URL characteristics, and other content-based signals.
+
+Random Forest combines predictions from multiple decision trees. The resulting classification depends on the training data and feature pipeline.
+
+The initial screening helps identify cases that may require deeper examination. It does not conclusively prove that an email is harmless or malicious.
+Stage 4 — Extract the links
+URLs are extracted from the message body and passed to the existing URL phishing module.
+
+This allows BrowseBlock to examine whether an email contains a suspicious destination, even when the email text itself looks ordinary.
+
+For example, an email may claim to be from a university but contain a link to an unrelated credential-collection site. URL analysis provides evidence that the email classifier might not obtain from language alone.
+Stage 5 — Examine email-authentication information
+BrowseBlock can incorporate SPF, DKIM, and DMARC results when these results are available and trustworthy.
+
+SPF — Sender Policy Framework
+
+Checks whether the sending server is authorized to send email on behalf of a domain.
+
+DKIM — DomainKeys Identified Mail
+
+Uses a cryptographic signature to verify selected message components and associate the message with a signing domain.
+
+DMARC — Domain-based Message Authentication, Reporting, and Conformance
+
+Uses domain-alignment rules and SPF/DKIM results to apply the domain's email-authentication policy.
+
+These checks help evaluate sender-related evidence, but passing authentication does not prove that the email is safe. A compromised legitimate account can send phishing messages, and an authenticated domain can still host malicious content.
+
+A SHA-256 hash of the visible email text is not a substitute for SPF, DKIM, or DMARC verification.
+Stage 6 — Deeper semantic analysis using RAG and an LLM
+For supported cases requiring more detailed examination, BrowseBlock can use Retrieval-Augmented Generation.
+
+RAG combines the supplied content with retrieved supporting information. For example, the system may retrieve relevant trusted security guidance and provide it alongside the email content to an LLM.
+
+The LLM can help:
+- Identify deceptive or manipulative language.
+- Explain apparent brand impersonation.
+- Summarize suspicious indicators.
+- Interpret relationships between message content and links.
+- Generate a human-readable explanation.
+The LLM should not be treated as a definitive phishing detector. Email text is untrusted input, and the model can misunderstand evidence or produce incorrect conclusions.
+Stage 7 — Fusion layer
+The fusion layer combines the available results:
+1. Random Forest's initial email classification.
+2. Extracted URL analysis.
+3. Available email-authentication results.
+4. RAG/LLM findings.
+5. Other supported reputation or contextual indicators.
+The layer produces an overall assessment based on the implemented decision policy.
+
+Missing authentication data should not automatically be treated as proof of phishing. Likewise, several weak indicators should not necessarily outweigh a reliable, trusted signal without an explicit policy.
+Stage 8 — Warning and explanation
+The extension can display a warning when the email meets the configured risk threshold.
+
+The dashboard can show more detailed evidence and the results of deeper analysis. The user can then understand why the message was classified as suspicious.
+
+This module is valuable because it does not rely on email text alone. It combines content analysis with the destinations of embedded links and available sender-authentication evidence.
+
+4.9 Browser notification scams
+Purpose: Identify suspicious website behaviour associated with deceptive browser notifications and permission requests.
+
+Some websites use misleading prompts that claim the user must enable notifications to view content, verify their identity, or continue browsing.
+
+The extension can examine supported permission events, accessible page text, URL characteristics, and other indicators.
+
+The detector can then assess whether a notification request appears suspicious and present an explanation.
+
+For example, a site that repeatedly presents a deceptive request to enable notifications while also showing suspicious destination or reputation indicators may warrant a warning.
+
+A notification request alone is not sufficient to classify a website as malicious. Legitimate websites also provide notifications.
+
+4.10 Browser-extension abuse
+Purpose: Identify accessible indicators that a browser extension may be abusive or unnecessarily risky.
+
+An extension might request permissions that are inconsistent with its intended purpose, misrepresent its functionality, or be associated with known malicious indicators.
+
+The module can assess available information such as:
+- Extension metadata that the system is permitted to access.
+- Declared permissions, where obtainable.
+- Known malicious indicators.
+- Available information about the extension's advertised purpose.
+- Other supported behavioural evidence.
+The results can be used to flag potentially abusive extensions.
+
+There is an important platform limitation: a normal browser extension does not automatically have unrestricted access to the source code and runtime behaviour of every other installed extension. A complete system-wide extension audit may require additional tooling, operating-system integration, or a different deployment model.
+
+BrowseBlock should therefore describe this module according to the information actually accessible to its implementation.
+
+5. How the security decisions are combined
+BrowseBlock has multiple detection modules, and each one can produce different kinds of findings. The system needs a consistent way to present those findings.
+
+A possible common result structure contains:
+- Threat category.
+- Classification.
+- Risk score, if the detector produces a meaningful score.
+- Supporting indicators.
+- Scan status.
+- Recommended action.
+For example, a URL detector might return a suspicious classification based on the URL feature model. An email detector might return a higher risk assessment because the message contains deceptive language and links to a suspicious destination.
+
+The fusion layer can combine relevant evidence into a final policy decision.
+
+However, the output of a classifier is not automatically a calibrated probability of maliciousness. The system should not combine scores from different models as though they were directly comparable unless the combination method has been designed and evaluated.
+5.1 Example of a complete detection scenario
+Suppose a user receives an email claiming to be a university account-security notification.
+
+The message asks the user to verify their account through a link.
+
+BrowseBlock can proceed as follows:
+1. The user opens the email in a supported email interface.
+2. The extension collects the accessible email information.
+3. The Random Forest classifier evaluates the email's features.
+4. The extension extracts the embedded URL.
+5. The URL module uses XGBoost to examine its features.
+6. Available sender-authentication results are incorporated.
+7. If deeper analysis is required, the email content and retrieved context are sent through the RAG/LLM workflow.
+8. The fusion layer combines the evidence.
+9. The extension displays a warning when the configured policy is triggered.
+10. The dashboard displays the reasons for the warning.
+This demonstrates the principal advantage of the architecture: the system evaluates not only the message's text but also the destination and available authentication evidence.
+
+6. The role of each algorithm and technology
+Technology or method	Role in BrowseBlock
+XGBoost	Classifies URLs based on extracted URL features; can classify supported file features if the file model is trained and integrated
+Random Forest	Performs initial email phishing screening
+RAG	Retrieves supporting context for deeper email analysis
+LLM	Helps interpret email content and produce explanations
+SHA-256	Generates file fingerprints for exact hash matching against trusted reputation data
+Static file analysis	Examines file structure and suspicious characteristics without executing the file
+Source-to-sink analysis	Tracks untrusted data toward potentially dangerous script operations where supported
+Reputation checks	Identify previously reported malicious URLs, files, or other indicators when a trusted source is integrated
+Firebase Authentication	Handles dashboard user authentication
+FastAPI	Provides API endpoints and coordinates centralized security analysis
+React	Renders the dashboard and its security findings
+Browser Extension APIs	Provide access to supported navigation, webpage, download, and user-interaction events
+
+What about WebAssembly and Web Workers?
+These are not part of the finalized core stack unless you have specifically added them to your code.
+
+A Web Worker can run suitable JavaScript tasks in the background, while WebAssembly can execute compiled code inside a browser. Either technology could be used for future performance improvements, but BrowseBlock does not need them simply because it is a browser-security project.
+
+7. What FastAPI actually does
+The FastAPI backend connects the extension, analysis components, and dashboard.
+
+Its responsibilities include:
+
+Request handling: Receive an analysis request from the extension or dashboard.
+
+Input validation: Ensure the request includes expected fields and reject malformed or unsupported input.
+
+Feature extraction: Convert received URLs or supported content into model features.
+
+Model inference: Load and invoke the trained XGBoost or Random Forest model where appropriate.
+
+Analysis coordination: Route extracted URLs from emails and QR codes to the URL detector, coordinate other supported checks, and aggregate findings.
+
+LLM integration: Send supported email-analysis requests to the RAG/LLM workflow if configured.
+
+Response generation: Return structured results to the calling component.
+
+Security controls: Verify authentication where required, apply access controls, limit inputs, and handle failures safely.
+
+The precise URL paths, request structures, and response fields depend on your actual backend implementation. FastAPI provides the framework, but it does not automatically implement the threat-detection algorithms.
+
+8. The role of the React dashboard
+The dashboard is the interface through which users can inspect security findings in greater detail.
+
+Its major responsibilities are:
+
+Authentication: Allow users to sign in through Firebase Authentication.
+
+Security summary: Show the results of available scans.
+
+Threat details: Display the category of threat and the supporting evidence.
+
+Explanation: Explain why a URL, email, file, or webpage was flagged when that evidence is available.
+
+Email analysis: Present deeper semantic analysis results and supporting indicators for supported emails.
+
+For example, a warning might explain that the system identified an unusual domain structure and a suspicious link in an email.
+
+The explanation should reflect the actual evidence used in the classification, rather than displaying a generic reason unrelated to the detector's output.
+
+Firebase's official guidance explains how a custom backend can receive a Firebase ID token and verify its authenticity to identify an authenticated user. 
+Firebase
+
+
+Since the current architecture has no separate application database, the dashboard does not automatically have access to long-term scan history. If it needs historical results, a persistent storage mechanism must be added.
+
+9. How the browser extension operates
+The browser extension is responsible for detecting events and connecting browser activity to the appropriate analysis workflow.
+
+Depending on the browser and implementation, the extension may use:
+- A manifest to declare its identity and permissions.
+- A background script or service worker for extension events.
+- Content scripts to inspect accessible webpage information.
+- Browser APIs to monitor supported navigation and download events.
+- A popup or interstitial to display warnings and launch manual interactions.
+- API requests to communicate with FastAPI.
+For example, a Chrome extension service worker can handle events from the browser and initiate related operations, while content scripts work with webpage content. These parts have different responsibilities and access restrictions. 
+Chrome for Developers
+
+
+The extension should request only the permissions needed for its implemented features. Access to emails, page content, downloads, and other browser information must be consistent with the browser's APIs, security restrictions, and user permissions.
+
+10. The machine-learning workflow
+Machine learning is useful only when the training pipeline and prediction pipeline agree on the data representation.
+
+BrowseBlock's models require the following general workflow.
+Step 1 — Obtain labelled data
+The system needs examples labelled according to the threat category being detected. URL classification needs phishing and legitimate URL examples. Email classification needs appropriately labelled email samples. A file model needs labelled files that match the supported formats and extracted features.
+Step 2 — Clean and prepare the data
+The training pipeline checks for invalid values, duplicates, inconsistent labels, and other data-quality issues.
+Step 3 — Extract features
+Each sample is converted into features that the selected algorithm can process.
+
+For URLs, these may include hostname and path characteristics. Email models may use textual and sender-related features. File models may use structural features appropriate to the file format.
+Step 4 — Split the dataset
+The dataset is divided into training, validation, and test subsets using a suitable strategy. Care is needed to avoid leakage caused by duplicated or highly similar samples appearing in both training and testing.
+Step 5 — Train the models
+XGBoost is trained for URL classification. Random Forest is trained for initial email screening. A separate file classifier can be trained if the project includes that model.
+Step 6 — Evaluate the models
+The test set is used to calculate metrics such as precision, recall, F1-score, and the confusion matrix.
+Step 7 — Integrate the models
+The trained models and their feature-extraction logic are integrated into the FastAPI backend or another intended execution location.
+Step 8 — Test with unseen cases
+The system should be tested on examples that were not used during training. This helps estimate how well the classifier generalizes beyond its training samples.
+
+No model accuracy or detection rate should be claimed without actual evaluation results.
+
+11. Security, privacy, and practical limitations
+BrowseBlock evaluates potentially sensitive information, so it must account for the security of the analysis workflow itself.
+
+URL safety: A backend that fetches user-provided URLs must guard against server-side request forgery and access to internal services.
+
+File safety: Uploaded files need size limits, input validation, and safe handling. They must not be executed during static analysis.
+
+Email privacy: Email content and headers can contain confidential information. Only necessary information should be collected and processed.
+
+Authentication: Protected dashboard functions must not rely solely on frontend checks.
+
+Model uncertainty: An unseen threat can evade a trained classifier, while a legitimate item can trigger a false positive.
+
+Third-party services: A reputation lookup or LLM analysis may fail because of network problems, rate limits, or service unavailability. The system must report incomplete analysis rather than silently treating it as a clean result.
+
+No database: Without separate persistent storage, the system cannot automatically retain a complete history of past scans and alerts.
+
+Browser restrictions: Some activities—particularly unrestricted inspection of other extensions, raw email authentication headers, complete file access, and low-level webpage behaviour—cannot be assumed to be available to a standard extension.
+
+These limitations do not invalidate the project. They define the practical boundaries within which the system must be implemented and evaluated.
+
+12. What makes BrowseBlock different?
+The main value of BrowseBlock is its integrated, multi-signal approach to browser security.
+
+A URL classifier alone would not adequately inspect email content. SHA-256 alone would not recognize an unknown malicious file. A language model alone would not reliably validate an email's authentication. A simple DOM scanner would not provide complete XSS detection.
+
+BrowseBlock brings these approaches together in one architecture:
+- URL phishing detection uses XGBoost.
+- QR-code phishing reuses the URL pipeline.
+- Email analysis combines Random Forest, URL analysis, authentication information, RAG, and an LLM.
+- File analysis can combine hash reputation, static inspection, and a suitable trained model.
+- Webpage threat detectors examine accessible indicators related to XSS, credential harvesting, redirects, clickjacking, cryptojacking, and notification scams.
+- Extension-abuse analysis evaluates the information the platform permits it to access.
+- The extension communicates timely warnings.
+- The dashboard provides additional detail and explanations.
+The strongest way to explain BrowseBlock is not that it guarantees the detection of all ten threat categories. It is that it provides one browser-integrated platform that applies different detection methods to different kinds of threats and presents the available evidence to the user.

@@ -1,18 +1,31 @@
-\chapter*{Conclusion}
-\addcontentsline{toc}{chapter}{Conclusion}
+\chapter{Conclusion}
 \thispagestyle{fancy}
 
 BrowseBlock addresses the need for an explainable, privacy-conscious security layer
 for browser activity. The requirements and literature study establish a unified
 architecture consisting of a Manifest V3 extension, React dashboard, FastAPI backend,
-machine-learning and rule-based detectors, Firebase Authentication, and MongoDB.
+machine-learning and rule-based detectors, Firebase Authentication, and MongoDB
+application data storage behind the backend.
 They also define ten threat categories and clarify that warnings, blocking, quarantine,
 and analysis completeness must not be overstated.
 
-The Phase I work provides the foundation for implementation by connecting each module
-to evidence from prior research, explicit functional requirements, interfaces, and
-evaluation criteria. Phase II will implement and integrate the selected detectors,
-validate models on representative current data, test browser/API limitations, measure
-security and performance metrics, and conduct controlled usability testing. BrowseBlock
-will remain an additional protection layer and will communicate uncertainty wherever
-the browser or available evidence cannot support a complete decision.
+The Phase I work connects the SRS requirements, literature findings, and software
+design into one event-driven workflow. The extension identifies the browser event,
+collects permitted evidence, and invokes the relevant detector instead of running
+all analyses on every page. The dashboard supports deeper URL, QR, email, and file
+investigations through FastAPI, while the common result format presents the risk,
+evidence, analysis status, and recommended action consistently.
+
+The design applies clear security and privacy boundaries. Firebase Authentication
+manages identity, while FastAPI verifies tokens, enforces authorization, coordinates
+detectors, and controls MongoDB access. Passwords and authentication secrets are
+not used for detection or stored as application data. Results distinguish Safe,
+Suspicious, High-risk, and incomplete analysis, and record whether a warning,
+blocking, cancellation, or other protective action was actually completed.
+
+Phase II will implement the selected detectors, validate models on representative
+and previously unseen data, test browser and API limitations, and measure accuracy,
+latency, resource usage, privacy, and confirmed protective actions. Controlled
+browser fixtures and synthetic credentials will support safer testing. BrowseBlock
+will remain an additional security layer and will communicate uncertainty whenever
+available evidence or browser capabilities are incomplete.

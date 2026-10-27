@@ -1,98 +1,263 @@
 \chapter{Literature Review}
 \setcounter{equation}{0}
+\sloppy
 
-\section{URL and Fake QR Phishing}
-Misiek and Hyla proposed an XGBoost URL phishing detector using URL features and
-cross-dataset validation. The study reported 90.7\% accuracy on a custom dataset and
-77.84\% average accuracy across three datasets, showing both the efficiency of XGBoost
-and the difficulty of generalizing to unseen data. BrowseBlock adopts the same direction:
-URLs are normalized, features such as length, subdomains, IP usage, special characters,
-and suspicious keywords are extracted, and QR-decoded URLs are passed through the same
-pipeline. Continuous retraining and evaluation on current datasets are necessary.
+\section{XGBoost-Based URL Phishing Detection Method With Cross-Dataset Validation, 2026}
+The paper by Milosz Misiek and Tomasz Hyla presents a machine-learning approach
+for detecting phishing URLs using XGBoost. The study addresses the difficulty of
+identifying malicious URLs that resemble legitimate web addresses and the
+challenge of maintaining detection accuracy when the model is evaluated on
+datasets different from those used during training. The authors emphasize that
+URL characteristics vary across datasets, which can affect the generalization
+ability of phishing-detection models.
 
-\section{HTML and JavaScript Redirects}
-Zeng et al.'s ``Hidden Path'' reconstructs malicious HTTP, JavaScript, and HTML redirect
-chains using a dynamic Chrome crawler and browser performance logs. It demonstrates that
-intermediary domains, delayed navigation, fabricated clicks, and iframe techniques can
-conceal a final destination. BrowseBlock adapts this idea to a lightweight extension by
-observing supported navigation events, evaluating destinations with the URL detector,
-and warning or interrupting high-risk navigation. A complete chain cannot be claimed
-when browser APIs do not expose every event.
+The proposed method uses Python-based feature extraction to derive URL
+characteristics, including lexical features, DNS and network information,
+security-related attributes, domain reputation, and redirect behavior. The study
+extracts more than 90 candidate features and applies feature selection to identify
+characteristics that remain useful across datasets. An XGBoost classifier is then
+evaluated using three datasets and compared with neural-network approaches. The
+paper reports 90.7\% accuracy on its custom dataset and 77.8\% average accuracy
+across three independent test datasets. These results highlight the importance of
+feature selection and cross-dataset evaluation.
 
-\section{Malicious File Downloads}
-The Hidost system by Šrndić and Laskov demonstrates static machine-learning detection
-of malicious PDF and SWF files without executing them. Its structural feature extraction
-and feature consolidation are relevant to BrowseBlock's download pipeline. BrowseBlock
-extends the principle to EXE, ZIP, PDF, DOC, and DOCX files using content-based type
-identification, format-specific static analysis, SHA-256 hashes, deterministic rules,
-reputation checks, and XGBoost. Untrusted files must remain unexecuted and analysis
-must be isolated and resource-limited.
+BrowseBlock adopts XGBoost for URL phishing classification and feature-based URL
+analysis. The extracted URL characteristics are supplied to the trained classifier
+to determine whether a destination appears legitimate or suspicious. The study's
+emphasis on cross-dataset validation is relevant when evaluating BrowseBlock
+against previously unseen URLs. For QR-code phishing, BrowseBlock adds a decoding
+stage that extracts the embedded URL and sends it through the same URL-analysis
+pipeline; QR decoding itself is not the principal method proposed in this paper.
 
-\section{Email Phishing}
-Akinyelu and Adewumi classify phishing email with Random Forest using features such as
-IP-based URLs, link-text mismatches, suspicious keywords, link count, JavaScript, and
-sender-domain differences. BrowseBlock uses this work for lightweight extension
-screening, while also incorporating available SPF, DKIM, and DMARC signals. Detailed
-dashboard analysis adds RAG retrieval, URL extraction, URL-model results, and LLM
-assessment of urgency, impersonation, social engineering, and credential harvesting.
-The reported 2014 accuracy cannot be assumed for current attacks; fresh evaluation is
-required.
+\clearpage
+\section{Classification of Phishing Email Using Random Forest Machine Learning Technique, 2014}
+The paper by Andronicus A. Akinyelu and Aderemi O. Adewumi investigates the use
+of machine learning to classify phishing emails. It addresses limitations of
+traditional email-filtering methods, which may fail to recognize newly developed
+phishing patterns because attackers frequently change the wording and structure of
+their messages. The research aims to identify useful email characteristics that
+distinguish phishing messages from legitimate messages while reducing the number
+of features required for classification.
 
-\section{Cryptojacking}
-Saad and Mohaisen studied more than 5,700 cryptojacking-associated websites using
-static JavaScript features and dynamic indicators such as CPU consumption, battery
-drain, and mining-server WebSocket communication. Their results support combining
-script, WebAssembly, worker, network, and resource-usage evidence. BrowseBlock uses
-these indicators to warn users or block suspicious resources where supported, while
-testing against obfuscated miners and legitimate resource-intensive applications.
+The proposed approach extracts phishing-related features from a dataset of 2,000
+emails and converts them into feature vectors for machine-learning classification.
+The authors use Random Forest and evaluate different feature combinations,
+including a reduced set of eight prominent features. The paper reports 99.7\%
+classification accuracy for its evaluated model. This result reflects the dataset
+and evaluation procedure used in the study and should not be assumed to represent
+the accuracy of every phishing-detection system.
 
-\section{Cross-Site Scripting}
-Pan and Mao combined static analysis with dynamic symbolic execution to detect
-DOM-sourced XSS in browser-extension scripts, identifying 58 previously unknown
-vulnerabilities in 154,065 scripts. BrowseBlock applies a lighter event-driven version:
-AST and pattern checks identify suspicious sources and sinks such as \texttt{eval()},
-while selective DOM and request monitoring distinguishes reflected, stored, and
-DOM-based XSS. Suspicious DOM changes alone do not prove that execution was prevented,
-so the system must report the actual protective action.
+BrowseBlock adopts Random Forest as the initial email-phishing screening technique.
+The classifier evaluates available email features and identifies messages that
+require further analysis. BrowseBlock extends this approach by examining URLs
+extracted from email content, incorporating SPF, DKIM, and DMARC results when
+available, and using RAG with an LLM for deeper contextual analysis. These
+additional stages are part of BrowseBlock's proposed hybrid pipeline rather than
+technologies introduced by the Random Forest paper.
 
-\section{Clickjacking}
-ClickProtect detects invisible iframe overlays, deceptive clickable elements, and fake
-cursors, then reveals elements or warns users. These techniques motivate BrowseBlock's
-inspection of iframe visibility, positioning, stacking, and interaction structures.
-Because transparent elements and custom cursors can be legitimate, multiple indicators
-must be correlated and browser-level controls such as CSP \texttt{frame-ancestors} and
-\texttt{X-Frame-\allowbreak Options} should complement extension detection.
+\clearpage
+\section{Detecting DOM-Sourced Cross-Site Scripting in Browser Extensions, 2017}
+The paper by Jinkun Pan and Xiaoguang Mao investigates DOM-sourced Cross-Site
+Scripting vulnerabilities in browser extensions. Extension scripts can interact
+with webpage content and may possess privileges beyond those available to ordinary
+webpage scripts. When attacker-controlled webpage data is processed unsafely by
+an extension, it may cause malicious script execution or unauthorized access to
+protected resources. The research focuses on identifying these vulnerabilities,
+particularly in user scripts associated with the Greasemonkey browser extension.
 
-\section{Browser Extension Abuse}
-CPDetector compares declared Chrome permissions with API usage and host access. Its
-analysis of 199,058 extensions found excessive permissions in 49.3\% of the dataset,
-illustrating the privacy risk of unnecessary cookies, history, and broad host access.
-BrowseBlock uses permission mismatches, manifest metadata, webpage tampering, and
-suspicious script injection as risk indicators. Excessive permission is not by itself
-proof of malicious behaviour, so dynamic evidence and context remain important.
+The authors propose a hybrid analysis framework with two phases. The first phase
+performs lightweight static analysis using text filtering and an Abstract Syntax
+Tree parser to identify potentially vulnerable code. The second phase applies
+dynamic symbolic execution together with a shadow-DOM component and
+constraint-solving techniques to investigate candidate vulnerabilities. The paper
+reports 58 previously unknown DOM-sourced XSS vulnerabilities in Greasemonkey
+user scripts. The results demonstrate the usefulness of combining lightweight
+source analysis with deeper investigation of potentially unsafe execution paths.
 
-\section{Browser Notification Scams}
-Subramani et al.'s PushAdMiner instrumented Chromium to collect notification permissions,
-service-worker activity, notification content, network requests, and post-click URLs.
-Among 21,541 notifications, the study identified 572 campaigns and found 51\% of
-advertisements malicious. BrowseBlock combines notification text, origin, destination
-URLs, redirects, urgency, fake security alerts, and reward/payment language instead of
-relying only on blocklists.
+BrowseBlock adopts the concept of examining suspicious data flows between
+untrusted webpage inputs and potentially dangerous JavaScript operations. Its XSS
+module can inspect accessible scripts and identify indicators involving sources
+such as URL parameters and sinks such as unsafe DOM-manipulation functions. The
+paper provides a reference for more advanced static and dynamic analysis
+techniques; BrowseBlock should claim AST analysis, symbolic execution, or
+shadow-DOM analysis only if those techniques are actually implemented.
 
-\section{Credential Harvesting}
-Playwright provides browser automation, JavaScript execution, network observation,
-locators, and repeatable interaction workflows. BrowseBlock uses it primarily for
-controlled analysis, testing, and dataset generation: suspicious pages can be loaded
-with synthetic credentials, login forms and password fields can be inspected, and
-submission destinations can be compared with the displayed identity. Production
-monitoring remains lightweight and event-driven, and the system must never collect
-real passwords or treat Playwright alone as proof of maliciousness.
+\clearpage
+\section{Hidden Path: Understanding the Intermediary in Malicious Redirections, 2022}
+The paper by Yuwei Zeng and co-authors examines how attackers use intermediary
+websites and redirect chains to conceal malicious destinations. Malicious redirects
+can make a user's navigation path difficult to understand by routing the browser
+through several domains before reaching the final page. Attackers may use delays,
+fabricated user interactions, or visitor characteristics to avoid detection by
+conventional security checks. The study investigates mechanisms used in these
+campaigns and the role of intermediate domains.
 
-\section{Research Gap}
-The reviewed work provides strong techniques for individual threats but generally
-focuses on one category, offline analysis, or heavyweight instrumentation. BrowseBlock
-addresses the integration gap by combining local real-time signals with backend
-analysis, risk explanations, authorized history, and explicit handling of browser/API
-limitations. Its evaluation must measure each module independently as well as the
-combined system, with particular attention to false positives, privacy, latency, and
-whether an advertised protective action was actually enforced.
+The researchers develop an iterative framework that uses a bipartite graph-based
+method to discover domains potentially associated with malicious redirections from
+real-world DNS traffic. They then use a Chrome-based crawler to visit suspicious
+domains and reconstruct redirect chains from browser performance logs. The analysis
+examines HTTP-, HTML-, and JavaScript-based navigation and identifies redirection
+fluxing, in which randomness is introduced into the redirect process to make
+malicious destinations harder to track.
+
+BrowseBlock adopts the concepts of monitoring navigation changes, examining
+suspicious redirect chains, and assessing the final destination using URL analysis.
+The redirect module can evaluate the requested URL and subsequent destinations
+where the required navigation information is available, and submit suspicious
+destinations to the XGBoost URL detector. The paper's graph-based DNS mining and
+large-scale crawling framework are reference techniques; they must not be
+described as implemented BrowseBlock components unless separately developed.
+
+\clearpage
+\section{Implementation of Extension for Browser to Detect Vulnerable Elements on Web Pages and Avoid Clickjacking, 2016}
+The paper by Dipti Pawade, Abhilasha Lahigude, Divya Reja, and Era Johri presents
+ClickProtect, a browser extension designed to identify webpage elements vulnerable
+to clickjacking. Clickjacking tricks a user into clicking an element different from
+the one intended. The paper examines invisible iframe overlays and fake cursors
+that conceal the actual target of a user interaction, with the objective of
+detecting suspicious elements and warning the user before an unsafe interaction.
+
+The proposed system consists of a revealing unit and an extenuation unit. The
+revealing unit inspects webpage source code and presentation characteristics to
+identify potentially hidden or misleading elements. The extenuation unit makes
+suspicious elements visible or otherwise helps prevent the user from interacting
+with a concealed target. This separation is relevant to BrowseBlock because
+detection and user protection are separate responsibilities even when they are
+presented in one browser workflow.
+
+BrowseBlock adopts the concepts of inspecting accessible webpage elements for
+suspicious visibility, overlay, and interaction indicators and warning the user
+when findings are concerning. These checks contribute to its clickjacking
+detection module, which can present supporting evidence through the extension
+popup and dashboard. Since legitimate websites also use iframes and overlays,
+the indicators should be combined with contextual checks rather than treating
+every iframe or invisible element as proof of an attack.
+
+\clearpage
+\section{Analyzing In-Browser Cryptojacking, 2024}
+The paper by Muhammad Saad and David Mohaisen investigates in-browser
+cryptojacking, in which a webpage executes JavaScript that uses a visitor's
+computing resources to mine cryptocurrency without appropriate consent. Unlike
+conventional malware requiring a separate executable, in-browser cryptojacking
+operates through scripts loaded by a webpage. It can consume CPU resources, drain
+batteries, and affect normal system performance.
+
+The researchers combine static and dynamic analysis. Static analysis extracts
+code-related features, while dynamic analysis investigates mining effects on CPU
+usage and battery consumption. The paper evaluates Logistic Regression, Linear
+Discriminant Analysis, k-Nearest Neighbours, Support Vector Machines, and Random
+Forest to distinguish cryptojacking scripts from benign and other malicious
+JavaScript samples. It also examines browser communication and the economic
+feasibility of cryptojacking as an alternative to online advertising.
+
+BrowseBlock adopts static JavaScript inspection, suspicious-script feature
+extraction, and machine-learning-based classification for cryptojacking detection.
+Resource-usage indicators may also help when the required information is available,
+but CPU consumption alone cannot prove cryptojacking. BrowseBlock's claims must
+therefore reflect the script indicators and runtime information actually accessible
+to its browser extension.
+
+\clearpage
+\section{Hidost: A Static Machine-Learning-Based Detector of Malicious Files, 2016}
+The paper by Nedim Šrndic and Pavel Laskov introduces Hidost, a static
+machine-learning system for detecting malicious files. It addresses malware hidden
+inside document formats such as PDF and SWF. These files are commonly legitimate,
+but their complex internal structures can be exploited through obfuscation,
+encoding, or manipulation of document elements. The research aims to improve
+detection without execution-based analysis.
+
+Hidost combines information about a file's logical structure with its content to
+generate features for machine-learning classification. It performs static analysis
+without executing the file and was evaluated on datasets containing approximately
+440,000 PDF files and 40,000 SWF files. Structural information characterizes files
+and improves detection of malicious documents. The reported experiments showed
+strong detection performance, particularly for malicious PDF files, compared with
+the evaluated antivirus engines.
+
+BrowseBlock adopts static file analysis, file-structure and content-feature
+extraction, and machine-learning-based malicious-file classification. These
+methods can assess supported downloads without executing them. The proposed
+BrowseBlock file pipeline can combine static features with SHA-256 reputation
+checks and a trained classifier, if those components are implemented. SHA-256
+matching is an additional reputation mechanism, not the central technique
+introduced by Hidost.
+
+\clearpage
+\section{When Push Comes to Ads: Measuring the Rise of (Malicious) Push Advertising, 2020}
+The paper by Karthika Subramani and co-authors examines web push notifications
+used to deliver advertisements, including malicious campaigns. Web push
+notifications can reach users even when the original webpage is no longer in the
+foreground. Although legitimate applications use notifications, attackers can
+distribute deceptive advertisements and direct users to scam pages. The study
+investigates the prevalence of malicious push advertising and the limitations of
+traditional ad-blocking and URL-filtering techniques.
+
+The authors develop PushAdMiner, which collects and analyzes web push
+notifications. An instrumented Chromium browser inspects service-worker behavior,
+while a crawler visits websites, registers for notifications, and collects
+messages. The system groups related notifications into advertising campaigns and
+examines their destinations. It collected 21,541 web push notifications and
+identified 5,143 advertisements across 572 campaigns; 51\% of the collected
+advertisements were reported as malicious. Traditional ad blockers and URL
+filters were often unable to block them.
+
+BrowseBlock adopts examination of notification content, notification destinations,
+and suspicious notification-related indicators. These findings inform the browser
+notification-scam module, which can warn users and present supporting information
+through the extension. PushAdMiner was primarily a measurement and collection
+framework rather than a complete real-time blocking classifier. BrowseBlock adapts
+its detection insights without claiming to implement the entire framework.
+
+\clearpage
+\section{CPDetector: Automated Detection of Excessive Permissions in Chrome Extensions, Preprint}
+The paper by Xiaoyu Cheng and co-authors investigates security risks associated
+with extensions requesting more permissions than their functionality appears to
+require. Extensions may access tabs, cookies, browsing history, and webpage
+content. Excessive permissions expose sensitive information and increase the
+potential for unauthorized access. The paper evaluates the relationship between
+declared permissions and APIs used by an extension.
+
+CPDetector extracts permission information from \texttt{manifest.json} and
+analyzes JavaScript code to identify API calls corresponding to browser
+permissions. It compares declared permissions with permissions inferred from the
+implementation. PermissionGuard, a browser extension, alerts users about excessive
+permissions. The framework analyzed 199,058 Chrome Web Store extensions and
+identified 98,072, or 49.3\%, as requesting excessive permissions according to
+its methodology. The uploaded version is a preprint and has not been peer
+reviewed.
+
+BrowseBlock adopts the principle of least privilege and permission-related risk
+assessment for its browser-extension-abuse module. Accessible extension metadata,
+declared permissions, and known suspicious indicators can identify potentially
+risky configurations. However, a standard extension does not automatically have
+unrestricted access to the internal code or runtime behavior of every other
+installed extension. BrowseBlock must limit its claims to information available
+through supported browser mechanisms.
+
+\clearpage
+\section{A Login Page Transparency and Visual Similarity-Based Zero-Day Phishing Defense Protocol, 2025}
+The paper by Gaurav Varshney, Akanksha Raj, Divya Sangwan, Sharif Abuadbba,
+Rina Mishra, and Yansong Gao proposes a phishing-detection and prevention protocol
+for fraudulent login pages. It focuses on phishing websites that imitate
+legitimate authentication pages and attempt to collect usernames and passwords.
+The authors identify limitations of URL blacklists and heuristic detection,
+which may miss newly created phishing pages. The proposed Page Transparency
+concept verifies login-page legitimacy before allowing a page to be displayed.
+
+The approach uses a Public Log Server to maintain records of legitimate login
+pages and cryptographic proofs to verify registration. It also uses visual
+page-matching with a Siamese Network Model to identify deceptive pages that
+closely resemble legitimate ones. A custom HTTP Page Transparency header supports
+client-side verification. The authors developed the AntiPhish Chrome extension
+and evaluated credential-requiring pages associated with 91 brands, including
+2,325 phishing pages, 115 legitimate pages, and 50 previously unseen legitimate
+pages.
+
+BrowseBlock adopts login-page identification, deceptive-authentication-interface
+detection, and browser-level warnings for its credential-harvesting module. The
+module can examine accessible form fields, submission destinations, URL
+characteristics, and inconsistencies between displayed identity and actual domain.
+Visual similarity could provide an additional signal if implemented and evaluated.
+BrowseBlock does not require the complete Page Transparency infrastructure,
+including its public log server and custom HTTP header. Findings can be combined
+with URL analysis to warn users before they disclose sensitive credentials.

@@ -7,7 +7,7 @@ provides immediate warnings or supported restrictions. The processing layer cont
 the FastAPI service and detector orchestration. The intelligence layer contains
 XGBoost, Random Forest, static-analysis rules, threat-intelligence integrations, and
 the RAG/LLM workflow. The dashboard and persistence layer provides authenticated
-interaction, reports, analytics, Firebase identity, and MongoDB records.
+interaction, reports, analytics, and Firebase identity.
 
 \section{Use Case Diagram}
 The primary use cases are monitoring browsing activity, scanning a URL or QR code,
@@ -40,7 +40,7 @@ For a navigation event, the extension captures the URL and available context, se
 only the required request to the backend, and receives a risk assessment and evidence.
 The extension displays the result and applies a supported rule when appropriate. For a
 dashboard scan, Firebase authenticates the user, FastAPI verifies the ID token,
-coordinates the selected detector, stores the authorized result in MongoDB, and
+coordinates the selected detector and returns the authorized result, and
 returns a report. At every stage, failed analysis and unavailable enforcement are
 reported explicitly.
 \IfFileExists{images/architecture.png}{%
@@ -61,6 +61,9 @@ minimal metadata may be retained according to policy; raw email, webpage, URL
 parameters, and file contents are not retained unnecessarily.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=15cm,height=13cm]{images/ERdiagram.png}
+    \makebox[\textwidth][l]{%
+        \hspace*{-2.5cm}%
+        \includegraphics[width=0.98\paperwidth,height=0.98\textheight,keepaspectratio]{images/ERdiagram.png}%
+    }
     \caption{BrowseBlock entity relationship diagram}
 \end{figure}
