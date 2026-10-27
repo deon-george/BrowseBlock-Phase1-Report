@@ -1,50 +1,256 @@
-\chapter{Methodology}
+\chapter{Requirement Analysis}
+\setcounter{equation}{0}
 
-\section{Research and Requirements Method}
-The project requirements were derived from the BrowseBlock Software Requirements
-Specification and organized around ten observable browser-threat categories. For each
-category, the methodology identifies the stimulus, observable evidence, analysis
-method, risk decision, user response, logging requirements, and browser limitations.
-The literature review was used to select practical techniques and to avoid transferring
-reported research accuracy directly to the proposed system.
+\section{Software Requirements}
+BrowseBlock requirements are derived from the Software Requirements Specification.
+The system consists of a Chromium Manifest V3 extension and a React web dashboard
+supported by a FastAPI service. Mandatory behavior is expressed as a system
+obligation, while optional behavior depends on browser permissions, available
+evidence, and the selected deployment configuration.
 
-\section{System Overview}
-BrowseBlock is a modular security platform with two client-facing surfaces. A
-Manifest V3 browser extension provides real-time monitoring and protective feedback.
-A React and Tailwind CSS dashboard provides authenticated manual scans, detailed
-reports, analytics, and history. A Python FastAPI backend validates requests, coordinates
-detectors and AI services, and mediates all database access. Firebase Authentication
-handles identity, while MongoDB stores authorized application records rather than
-passwords or authentication secrets.
+\section{User Classes and Characteristics}
+General users require short warnings, a clear recommendation, and a way to continue
+or return to browsing. Authorized users of the dashboard require scan forms, result
+history, threat evidence, and analytics. Security analysts require detailed
+indicators and report context for investigation. Administrators require controlled
+configuration and access management. These classes differ in privilege, but none
+should receive model credentials, database credentials, or raw data beyond the
+authorized workflow.
 
-\section{Detection Methodology}
+\subsection{Functional Requirements}
+The system shall authenticate dashboard users through Firebase Authentication and
+shall verify identity at the FastAPI boundary. It shall accept supported URLs, QR
+codes, emails, webpages, and downloaded files for analysis. It shall select the
+appropriate detector from the triggering browser event or the user-selected scan
+type, validate input, and return a common result containing a risk level, evidence,
+analysis completeness, and recommended or completed protective action.
+
+The extension shall monitor supported navigation, webpage scripts and DOM behavior,
+redirects, frames, notification prompts, downloads, and observable extension
+activity. It shall provide a warning or restriction when the browser APIs,
+permissions, evidence, and policy support that action. The dashboard shall allow
+authorized users to submit manual scans, review reports and analytics, and inspect
+the evidence behind a decision. The system shall never require a real password as
+an input to a detection workflow.
+
+\subsubsection{Functional Requirement Summary}
+The main functional requirements of BrowseBlock are:
 \begin{itemize}
-\item \textbf{URL and QR analysis}: normalize URLs, extract domain and lexical features,
-and classify with XGBoost. Decode supported QR codes and analyze their URL payloads.
-\item \textbf{Page and script analysis}: inspect observable scripts, DOM sources and
-sinks, redirects, frames, overlays, WebAssembly, workers, and notification prompts.
-\item \textbf{Credential and email analysis}: identify deceptive forms and external
-script domains; use Random Forest for initial email screening and RAG/LLM analysis for
-authorized detailed investigations.
-\item \textbf{File analysis}: identify file types from content, calculate SHA-256 hashes,
-extract format-specific static features, apply rules and XGBoost, and never execute
-untrusted content.
-\item \textbf{Extension analysis}: compare available permissions and host access with
-observable API use and page changes, treating mismatches as risk indicators.
+\item Authenticate dashboard users and authorize access to scans, reports, and analytics.
+\item Monitor browser navigation, webpages, redirects, frames, notifications, downloads, and extension activity.
+\item Detect URL and QR-code phishing using URL normalization, feature extraction, and classification.
+\item Detect reflected, stored, and DOM-based cross-site scripting indicators.
+\item Detect credential-harvesting forms, suspicious domains, scripts, and scam pop-ups without collecting passwords.
+\item Track redirect chains, evaluate final destinations, and warn about malicious navigation.
+\item Detect clickjacking through suspicious frames, overlays, positioning, and interaction patterns.
+\item Detect cryptojacking through mining scripts, WebAssembly, workers, mining endpoints, and resource behavior.
+\item Analyze downloaded executable, PDF, DOC, DOCX, and ZIP files using static inspection, hashes, rules, and models.
+\item Classify suspicious files and support warning, cancellation, quarantine, or release according to policy.
+\item Detect email phishing using sender details, links, authentication signals, machine learning, retrieval, and semantic analysis.
+\item Detect notification scams using origin, prompt text, urgency, destinations, and redirects.
+\item Detect browser-extension abuse through permissions, host access, injected scripts, API use, and page changes.
+\item Display Safe, Suspicious, or High-risk results with evidence, analysis status, and recommended protective action.
+\item Record detection events and clearly report unsupported inputs, unavailable evidence, failed analysis, and incomplete results.
 \end{itemize}
 
-\section{Risk and Evidence Model}
-Every detector produces a normalized result containing a risk level, evidence
-indicators, analysis completeness, timestamp, and protective action. The levels are
-Safe, Suspicious, and High-risk. A failed parser, timeout, unsupported format, or
-unavailable browser event is represented as incomplete analysis rather than a safe
-verdict. Warnings and blocks are issued only when the relevant browser capability and
-confidence threshold support the action.
+\subsection{Non-Functional Requirements}
+\begin{itemize}
+\item \textbf{Security:} protected requests shall use HTTPS in deployment, Firebase
+ID tokens shall be verified server-side, and secrets shall not be exposed to the
+extension or dashboard.
+\item \textbf{Privacy:} collection shall be limited to data required for detection
+and authorized reporting. Email, webpage, and file content shall be submitted for
+deeper analysis only when permitted by the workflow.
+\item \textbf{Performance:} lightweight checks shall remain event-driven, while
+expensive models and retrieval workflows shall execute in the backend.
+\item \textbf{Reliability:} timeouts, unsupported formats, failed parsers, and
+unavailable browser events shall produce an explicit incomplete-analysis state,
+not a false Safe verdict.
+\item \textbf{Usability:} warnings shall present the risk, reason, evidence, and
+available action in language suitable for non-specialist users.
+\item \textbf{Maintainability:} detectors, models, rules, and user interfaces shall
+remain modular and independently testable.
+\end{itemize}
 
-\section{Privacy and Security Method}
-Only data required for detection, auditing, and configured retention is collected.
-Actual passwords are never captured, and email or file content is submitted for deeper
-analysis only with user authorization. HTTPS protects deployed communication. Firebase
-ID tokens are verified server-side by FastAPI, authorization is enforced before
-MongoDB reads or writes, and API credentials and database connections are never
-exposed to extension or dashboard clients.
+\section{Design and Implementation Constraints}
+The extension must operate within Manifest V3 lifecycle and permission rules.
+Content scripts can inspect only the pages and events exposed by the browser, and
+some protected or cross-origin content may be unavailable. Backend analysis depends
+on network connectivity, model availability, file-size limits, parser safety, and
+the response time of external reputation or language services. The system shall
+therefore use timeouts, input-size limits, isolated processing, and explicit
+fallback states rather than silently treating a failed operation as Safe.
+
+\section{External Interface Requirements}
+\subsection{User Interfaces}
+The extension shall provide concise warnings, scan status, risk classification,
+indicator summaries, and an available action such as continue, cancel, or review.
+The dashboard shall provide authentication, URL and QR scanning, email and file
+submission, report viewing, analytics, and help describing analysis limitations.
+
+\subsection{Software Interfaces}
+The extension and dashboard communicate with REST-style FastAPI endpoints. The
+backend validates structured requests, invokes the relevant detector, and returns a
+consistent JSON result. Firebase Authentication supplies user identity; client
+components do not connect directly to protected backend resources or model files.
+
+\subsection{Operating Environment}
+The extension targets supported Chromium browsers that provide the permissions
+needed for the selected monitoring features. The dashboard runs in a modern browser.
+The backend runs in a Python environment with FastAPI and the configured model,
+parsing, QR-decoding, and language-analysis dependencies. A stable network is
+required for centralized analysis and authentication.
+
+\subsection{Communication and Data Interfaces}
+Extension and dashboard requests shall use structured JSON over HTTPS in deployment.
+Protected requests shall carry a Firebase ID token, while the backend shall validate
+the token and determine the authorized user or role. A scan request identifies the
+input type, source, and permitted content. A result includes the risk level,
+confidence or supporting evidence, analysis status, timestamps, and actual action.
+MongoDB stores authorized application data through backend operations; clients do
+not connect directly to the database.
+
+\section{System Features}
+\subsection{URL and Fake QR Phishing}
+The URL detector parses protocol, host, domain, subdomains, path, query, length,
+symbols, IP usage, and suspicious keywords. XGBoost classifies the extracted
+features. A QR workflow decodes the supported image, verifies whether its payload
+is a URL, and passes that URL to the same detector.
+
+The stimulus is a supported navigation event or a QR code submitted through the
+dashboard. The response sequence is capture or decode, normalize, feature
+extraction, XGBoost classification, explanation, and warning or restriction where
+supported. Malformed, unusually long, or encoded input must be handled without
+crashing. The detector shall be evaluated using precision, recall, and
+false-positive measurements while minimizing storage of sensitive URL parameters.
+
+\subsection{Cross-Site Scripting}
+The system inspects supported scripts, source-to-sink patterns, DOM changes, and
+observable requests for reflected, stored, and DOM-based XSS indicators. It reports
+indicators and actual enforcement separately because detection of a suspicious
+pattern does not prove that script execution was prevented.
+
+The detector shall examine suspicious sources and sinks, inline scripts, event
+handlers, dynamically created script elements, unexpected script sources, and
+observable DOM manipulation. It shall distinguish reflected, stored, and DOM-based
+indicators where evidence permits. Conclusions remain limited to content scripts
+and browser APIs visible at runtime, and legitimate page behavior must not be
+disrupted unnecessarily.
+
+\subsection{Credential Harvesting and Redirects}
+Credential-harvesting analysis identifies deceptive forms, password fields,
+mismatched page identity, external submission destinations, and suspicious scripts
+without collecting real credentials. Redirect analysis evaluates navigation chains,
+delayed JavaScript or HTML redirects, intermediary domains, frames, and the final
+destination where those events are visible to the browser.
+
+For credential harvesting, the stimulus is a login or sensitive-data form. The
+system compares the displayed identity, registered domain, form action, password
+fields, external scripts, and submission destination without collecting a real
+password. For redirects, it records observable source and destination URLs,
+evaluates the final destination using URL-risk information, avoids repeated
+analysis of the same event, and reports when the browser did not expose a complete
+chain.
+
+\subsection{Clickjacking and Cryptojacking}
+Clickjacking analysis correlates invisible or deceptive overlays, iframe visibility,
+stacking, positioning, and interaction patterns. Cryptojacking analysis examines
+scripts, WebAssembly, workers, mining endpoints, and abnormal resource indicators.
+Legitimate overlays and resource-intensive pages require multiple indicators before
+a high-risk decision.
+
+Clickjacking processing begins when a page contains frames or embedded interactive
+content. It examines iframe attributes, visibility, position, overlay relationships,
+stacking, and interaction structure, then warns or restricts only when a reliable
+browser-supported mechanism exists. Cryptojacking processing begins when scripts,
+WebAssembly, workers, or mining-related network behavior are observed. It combines
+configured mining-resource indicators with available resource evidence while
+minimizing monitoring overhead and false positives on legitimate intensive pages.
+
+\subsection{Malicious File Downloads}
+Supported downloads, including ZIP, PDF, EXE, DOC, and DOCX files, are identified
+from their content and extension. The workflow can calculate SHA-256 hashes, apply
+format-specific static analysis and deterministic rules, use reputation information,
+and invoke the configured model. Untrusted files are not executed merely for
+analysis.
+
+When a supported download starts, the extension identifies the file and transfers
+only the required content or metadata to the controlled workflow. The backend
+applies file-specific parsers, static rules, SHA-256 and reputation checks, and
+XGBoost where configured. A native helper may provide controlled file access,
+quarantine, and release support. Size, archive, time, and resource limits shall
+be enforced, and the final record shall distinguish allow, warn, cancel, and
+quarantine actions.
+
+\subsection{Email Phishing}
+The extension performs lightweight screening using Random Forest features and
+available SPF, DKIM, and DMARC signals. Authorized dashboard analysis can extract
+URLs, retrieve relevant knowledge through RAG, and use an LLM to assess urgency,
+impersonation, social engineering, and credential harvesting. Extracted URLs are
+also evaluated by the URL detector.
+
+The first stage screens sender and domain differences, link-text mismatch,
+IP-based URLs, suspicious terms, link count, script indicators, and available
+authentication signals. A dashboard investigation is a second stage: after user
+authorization, RAG retrieves context, links and patterns are extracted, the URL
+detector assesses extracted links, and the LLM summarizes semantic indicators.
+SPF, DKIM, and DMARC success is evidence only, not proof of safety. Retrieval,
+inference, and external requests require configurable timeouts, and failed analysis
+must remain visibly incomplete.
+
+\subsection{Browser Notification Scams and Extension Abuse}
+Notification analysis evaluates origin, text, urgency, fake security warnings,
+reward or payment language, destinations, and redirects. Extension-abuse analysis
+compares declared permissions, host access, observable API use, injected scripts,
+and page changes. Excessive permission alone is treated as an indicator rather
+than proof of malicious behavior.
+
+Notification analysis begins when a page requests permission or displays a related
+prompt. It correlates origin, prompt text, associated URL, fake security or prize
+language, and post-click behavior while minimizing interference with legitimate
+notifications. Extension-abuse analysis examines observable permissions,
+unexpected webpage tampering, suspicious injection, and host access. If browser
+APIs do not expose enough information, the system shall state that limitation and
+avoid claiming a complete assessment.
+
+\section{Risk Classification}
+Every detector maps its evidence to one of three user-facing levels: Safe,
+Suspicious, or High-risk. The result also records the detector category, evidence
+indicators, timestamp, analysis completeness, and protective action. A completed
+scan is not a guarantee that an item is safe, and the report must identify
+unsupported content, incomplete visibility, and unavailable enforcement.
+
+\section{Logging, Audit, and Reporting Requirements}
+The system shall record sufficient metadata to explain a result and troubleshoot
+the workflow: scan type, detector, time, status, indicators, risk level, and
+protective-action outcome. Sensitive URL parameters, email bodies, webpage content,
+and file content shall not be retained unnecessarily. Audit records shall distinguish
+a requested action from a completed action and shall be protected by authentication,
+authorization, and the configured retention policy.
+
+\section{User Documentation and Future Requirements}
+Documentation shall explain installation, supported browser versions, supported
+file types and limits, scan workflows, report interpretation, risk decisions,
+privacy behavior, and troubleshooting for failed or unsupported operations. The
+modular architecture shall support future threat categories, updated models, new
+browser APIs, improved threat intelligence, and additional dashboard analytics.
+The implementation must finalize the browser/API matrix, model versions and
+datasets, external providers, file limits, retention periods, deployment
+environment, and warning, cancellation, quarantine, and release policies.
+
+\section{Proposed Solution}
+The proposed solution is an event-driven extension backed by a centralized
+FastAPI service and an authenticated React dashboard. The extension performs
+low-latency collection and user feedback. FastAPI validates input, verifies
+identity, dispatches detectors, coordinates XGBoost, Random Forest, static rules,
+QR decoding, file analysis, reputation services, and RAG/LLM workflows, and writes
+authorized records to MongoDB. The dashboard provides deliberate scans and deeper
+explanations without bypassing the backend security boundary.
+
+\section{Scope and Limitations}
+BrowseBlock is an additional browser-security layer, not a replacement for
+antivirus, browser security controls, or enterprise monitoring. Detection is
+bounded by Chromium permissions, browser API visibility, network availability,
+model quality, external-service availability, and the evidence observable at
+runtime. The first prototype will prioritize representative modules and controlled
+evaluation rather than claiming complete prevention of every attack.

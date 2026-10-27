@@ -1,44 +1,163 @@
-\chapter{System Study}
+\chapter{System Architecture}
+\setcounter{equation}{0}
+\sloppy
 
-\section{Existing System}
-Current protection is distributed among browser warnings, URL blocklists, antivirus
-software, email filters, and security extensions. These tools are valuable but often
-operate independently, provide limited explanations, or cannot inspect all modern
-browser behaviours. Blocklists can miss new campaigns, while heavyweight crawlers and
-dynamic analysis are unsuitable for continuous protection on every user page.
+\section{Architecture Diagram}
+The architecture diagram presents BrowseBlock as a platform composed of a Manifest
+V3 browser extension, a FastAPI backend, a React and Tailwind web dashboard,
+detection services, Firebase Authentication, MongoDB application data, and
+external AI, RAG, LLM, and reputation services.
 
-\section{Proposed System}
-BrowseBlock combines an event-driven extension with a centralized analysis service.
-The extension observes supported navigation, webpage, download, notification, and
-extension events. The dashboard enables deliberate scans and detailed review. The
-backend coordinates model inference, static analysis, RAG/LLM services, authentication,
-authorization, and persistence. This division keeps common checks lightweight while
-allowing expensive analysis only when evidence or user intent justifies it.
+The Chromium browser provides web pages, navigation events, and download events
+to the browser extension. The extension is the primary protection and interaction
+layer. It observes supported activity, collects only the evidence permitted by
+browser APIs and configured permissions, and sends relevant requests to the
+FastAPI backend over HTTPS. The extension also receives risk results and displays
+warnings or supported protective actions to the user.
 
-\section{System Modules}
-\begin{enumerate}
-\item URL and fake-QR phishing detection
-\item Cross-site scripting detection and prevention
-\item Credential-harvesting detection
-\item HTML/JavaScript redirect analysis
-\item Clickjacking detection
-\item Cryptojacking detection
-\item Malicious file-download analysis
-\item Email phishing detection
-\item Browser notification-scam detection
-\item Browser-extension abuse detection
-\end{enumerate}
+The React dashboard provides authenticated manual scans and detailed result
+review. Users can submit URLs, QR codes, emails, and supported files, and can
+review detection results, evidence, threat reports, analytics, and authorized
+history. The dashboard communicates with FastAPI rather than connecting directly
+to detector services or MongoDB.
 
-\section{Users and Roles}
-General users need concise warnings and practical recommendations. Organizational users
-need an additional protection layer for browsing, email, and downloads. Authorized
-security analysts review evidence and threat reports, while administrators manage
-configuration, services, and access. All role-specific dashboard data is subject to
-authenticated ownership or explicit authorization.
+FastAPI is the central processing and orchestration layer. It validates request
+schemas, verifies Firebase ID tokens for protected operations, checks user or
+role authorization, selects the appropriate detector, coordinates model and rule
+execution, and returns a common result format. The detection-services block
+contains URL and QR, webpage, email, and file-analysis workflows. Expensive
+processing such as model inference, file parsing, RAG retrieval, and LLM analysis
+is handled by the backend where appropriate.
 
-\section{Constraints}
-Detection is bounded by Chromium permissions, browser API visibility, network
-availability, model quality, external service availability, and the evidence observable
-at runtime. BrowseBlock therefore complements rather than replaces existing endpoint
-security. Supported browsers, model versions, datasets, file limits, retention periods,
-and the first-prototype module set remain implementation decisions to be finalized.
+Firebase Authentication manages registration, sign-in, and identity verification.
+Authentication secrets and passwords are not stored in MongoDB. MongoDB stores
+authorized application records such as user metadata, scans, detection results,
+evidence, threat reports, and protective-action records. Database access remains
+behind FastAPI, where ownership and role checks can be enforced. External AI,
+RAG, LLM, and reputation services are optional evidence sources called by the
+backend and are not exposed directly to untrusted clients.
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{%
+        \includegraphics[width=1.2\textwidth,height=0.9\textheight,keepaspectratio]{images/architecture.png}%
+    }
+    \caption{BrowseBlock architecture diagram}
+\end{figure}
+
+\clearpage
+\section{Activity Diagram}
+The activity diagram describes the complete runtime flow from browsing to
+detection, user decision, logging, and optional dashboard review. The workflow
+starts when the user opens a browser and begins browsing. The system waits for a
+supported event and then identifies the event type.
+
+The ``Event Detected'' decision branches into URL entry, email selection,
+encountered QR code, malicious file download, browser-extension abuse,
+cross-site scripting, credential harvesting, HTML or JavaScript redirects,
+clickjacking, and cryptojacking. Browser notification scams appear as a related
+notification branch in the monitoring flow. Each event is routed to the relevant
+detector rather than executing every detector for every browser action.
+
+The event branches converge before the system presents a blocking webpage or
+popup and evaluates the resulting evidence. The ``Risk Level?'' decision produces
+Safe, Suspicion/Suspicious, High Risk, or Inconclusive. A Safe result allows the
+page or activity to continue normally. Suspicious and High Risk results ask for
+a user action: the user may allow and load the activity or return to browsing.
+The Inconclusive branch displays an incomplete-analysis notification and gives
+the user an explicit choice instead of treating failure or missing visibility as
+proof that the activity is safe.
+
+All outcome branches converge at ``Log Detection Result''. The logged information
+includes the detected category, risk level, available evidence, analysis status,
+timestamp, and protective action. This allows BrowseBlock to distinguish between
+a requested action and an action that was actually completed. The workflow then
+asks whether the dashboard should be opened. If the user opens it, the user can
+view evidence, explanations, and history. The manual URL and QR-code path at the
+bottom of the diagram shows that dashboard scans can enter the same reporting
+workflow without originating from automatic browser monitoring.
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{%
+        \includegraphics[width=1.08\textwidth,height=0.9\textheight,keepaspectratio]{images/ActivityDiagram.png}%
+    }
+    \caption{BrowseBlock activity diagram}
+\end{figure}
+
+\section{ER Diagram}
+The ER diagram describes the application data created by BrowseBlock scans and
+security decisions. A USER can initiate zero or many SCAN records. A scan stores
+the input type, input reference, source, start time, completion time, and
+processing status. A scan can produce zero or many DETECTION\_RESULT records
+because one input may be analyzed by more than one detector or may produce
+multiple threat-category findings.
+
+Each DETECTION\_RESULT stores a risk level, confidence score, summary, detection
+time, and analysis status. A result is associated with one THREAT\_CATEGORY, such
+as URL phishing, XSS, malicious downloads, or email phishing, while one category
+can classify many results. A result can contain multiple THREAT\_EVIDENCE records.
+Each evidence record identifies the indicator type, description, source reference,
+and creation time so that the dashboard can explain why a result was produced.
+
+A detection result can trigger zero or many PROTECTIVE\_ACTION records. The action
+type, action status, action time, and details record whether BrowseBlock attempted
+to warn, block, cancel, quarantine, allow, or restrict an activity and whether
+that action succeeded. This distinction is essential because browser permissions
+or unavailable APIs may prevent a requested action from being completed.
+
+Detection results and their evidence are summarized in THREAT\_REPORT records
+owned by an authenticated user. Reports provide the dashboard view of scan
+history and findings. The foreign-key relationships support traceability from a
+report to its scan, result, category, evidence, and protective action. FastAPI
+must enforce ownership and role authorization before returning these related
+records, while sensitive URL parameters, email content, webpage content, and
+file content are retained only when required by the configured privacy policy.
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][l]{%
+        \hspace*{-2.5cm}%
+        \includegraphics[width=0.98\paperwidth,height=0.98\textheight,keepaspectratio]{images/ERdiagram.png}%
+    }
+    \caption{BrowseBlock entity relationship diagram}
+\end{figure}
+
+\clearpage
+\section{Use Case Diagram}
+The use-case diagram divides BrowseBlock into the Browser Extension and React
+Web Dashboard areas. The Web Browser actor installs or enables the extension,
+configures its settings, and supplies browser activity for monitoring. Monitoring
+includes URL phishing detection, QR-code analysis, XSS detection, credential-
+harvesting detection, HTML or JavaScript redirect detection, clickjacking
+detection, cryptojacking detection, malicious-download analysis, email-phishing
+detection, notification-scam detection, and extension-abuse detection.
+
+The dashed ``include'' relationships show that monitoring invokes the appropriate
+detector for the observed event. The detector paths converge on ``Block / Restrict
+High-Risk Activity''. The associated ``Display Warning / Risk Details'' use case
+communicates the risk level, evidence, recommended response, and available
+protective action to the user. The ``extend'' relationships represent conditional
+behavior: restriction, blocking, or additional warning details are applied only
+when the evidence, configured policy, and browser capability support them.
+
+The User actor is connected to sign-in/sign-out, dashboard viewing, detection
+result review, threat-detail and evidence review, detection history, analytics,
+and manual scanning. ``Run Scan'' includes separate URL, QR-code, email, and
+supported-file scan use cases. These dashboard actions are authenticated and
+processed through FastAPI so that users can inspect only records for which they
+have authorization.
+
+Firebase Authentication is represented as an external actor because it validates
+the user's identity for dashboard access. It does not replace the FastAPI
+authorization boundary: the backend verifies the Firebase ID token, checks
+ownership or role permissions, invokes the selected detector, stores authorized
+records in MongoDB, and returns the result to the dashboard.
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{%
+        \includegraphics[width=1.30\textwidth]{images/useCase.png}%
+    }
+    \caption{BrowseBlock use-case diagram}
+\end{figure}
