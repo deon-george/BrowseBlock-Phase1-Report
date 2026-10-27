@@ -11,7 +11,7 @@
 
 %% File to be included while running latex.
 \includeonly{chapter/chapter1,chapter/chapter2,chapter/chapter3%
-                 ,chapter/chapter4,chapter/chapter5,chapter/chapter6,conclusion,ref,mission,append}
+                 ,chapter/chapter4,conclusion,ref,append,slides,mission}
 
 \begin{document}
 %% Front page of thesis
@@ -30,14 +30,9 @@
 \include{chapter/chapter2}
 \include{chapter/chapter3}
 \include{chapter/chapter4}
-\include{chapter/chapter5}
-\IfFileExists{chapter/chapter6.tex}{%
-    \include{chapter/chapter6}%
-}{%
-    \PackageWarning{thesis}{Missing chapter/chapter6.tex; chapter 6 omitted}%
-}
 \include{conclusion}
 \include{ref}
-\include{mission}
 \include{append}
+\include{slides}
+\include{mission}
 \end{document}

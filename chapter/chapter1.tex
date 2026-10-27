@@ -1,58 +1,186 @@
 \setcounter{equation}{0}
 \chapter{Introduction}
+\sloppy
 
 \section{Background}
-Internet users increasingly encounter threats through ordinary browsing activities:
-fraudulent URLs, QR-code phishing, deceptive login pages, malicious redirects, injected
-scripts, unsafe downloads, and abusive browser extensions. Existing browser security
-features and antivirus products provide important protection, but they do not always
-explain why a page or action is suspicious, and many threats depend on context that is
-only visible while the user is browsing. The literature reviewed for this project shows
-that machine-learning classifiers, static and dynamic analysis, browser instrumentation,
-and threat-intelligence services can each identify useful indicators, but no single
-technique provides complete coverage.
+Modern web browsers are used for banking, shopping, communication, education,
+file exchange, and access to cloud applications. This convenience also makes the
+browser an important attack surface. A user may encounter a phishing URL in a
+message, a QR code that redirects to a counterfeit website, a malicious download,
+a deceptive login form, an injected script, or a notification that imitates a
+security warning. These attacks often depend on a sequence of browser events rather
+than on one isolated file or address.
+
+Traditional protection is distributed across browser warnings, blocklists, antivirus
+software, email filters, and individual security extensions. These controls are
+valuable, but they may not cover all browser activity, may provide little explanation,
+and may not distinguish between a detected threat and an action that was actually
+blocked. A URL may be new and absent from a blocklist, while a page may appear
+normal until its scripts, frames, redirects, or forms are examined.
+
+BrowseBlock proposes an additional, explainable protection layer. It combines
+event-driven browser monitoring with machine-learning classification, static rules,
+reputation evidence, webpage inspection, and authorized language-model-assisted
+analysis. The design is intentionally modular so that each detector can be evaluated
+independently and the user can see both the evidence and the limitations of a result.
 
 \section{Problem Statement}
-Users need a lightweight and understandable security layer that can observe supported
-browser activity, combine multiple indicators, and provide timely warnings without
-collecting unnecessary private content. Existing approaches are commonly specialized:
-URL classifiers do not explain page behaviour, blocklists miss new campaigns, and
-heavyweight analysis cannot run continuously in a browser extension. The problem
-addressed by BrowseBlock is therefore the design of a unified, explainable system that
-detects and helps prevent several browser-based attacks while clearly distinguishing a
-completed protection action from an incomplete or unavailable analysis.
+Users need timely protection against browser-based attacks without manually
+investigating every URL, message, webpage, download, or browser extension. Existing
+solutions are commonly specialized: URL classifiers may not analyze page behavior,
+email filters may not follow extracted links, and heavyweight dynamic analysis is
+unsuitable for continuous execution inside a browser extension. A blocklist can also
+miss newly created or modified campaigns.
 
-\section{Objectives and Scope}
-The project aims to design an AI/ML-powered browser security platform consisting of a
-Manifest V3 Chromium extension and a React web dashboard backed by FastAPI. Its scope
-includes URL and fake-QR phishing, cross-site scripting, credential harvesting,
-HTML/JavaScript redirects, clickjacking, cryptojacking, malicious file downloads, email
-phishing, browser notification scams, and browser-extension abuse. The system will
-classify activity as Safe, Suspicious, or High-risk, explain the evidence used, warn or
-restrict risky activity where browser capabilities permit, and store authorized scan
-history and reports. It is an additional security layer, not a replacement for antivirus,
-browser security controls, or enterprise security systems.
+The problem addressed by BrowseBlock is the design of a unified security platform
+that observes supported browser events, selects the relevant detector, combines
+available evidence, explains the resulting risk, and recommends or applies a
+protective action where browser capabilities permit. The system must also represent
+incomplete analysis explicitly. A timeout, unsupported format, unavailable browser
+event, or failed parser must not be reported as proof that an item is safe.
+
+\section{Objectives of the Project}
+The objectives are organized around the complete protection workflow.
+
+\subsection{User Authentication and Access Control}
+Provide sign-in and sign-out through Firebase Authentication, verify Firebase ID
+tokens at the FastAPI backend, and restrict reports, analytics, configuration, and
+other protected operations to authorized users and roles.
+
+\subsection{Event-Driven Browser Monitoring}
+Monitor supported navigation, webpage content, scripts, frames, redirects,
+notifications, downloads, email content, and observable extension activity without
+running every detector on every page. The triggering event should determine the
+smallest relevant analysis workflow.
+
+\subsection{Threat Detection and Classification}
+Detect ten threat categories: URL and fake-QR phishing, XSS, credential harvesting,
+HTML/JavaScript redirects, clickjacking, cryptojacking, malicious downloads, email
+phishing, browser notification scams, and browser-extension abuse. Each result shall
+be classified as Safe, Suspicious, or High-risk with supporting indicators.
+
+\subsection{Evidence-Based Explanations}
+Show the user why an item was flagged, including suspicious URL features, form
+destinations, redirect evidence, script indicators, file characteristics, email
+signals, notification content, or permission mismatches. The explanation shall
+identify uncertainty and distinguish evidence from a guaranteed conclusion.
+
+\subsection{Warnings and Protective Actions}
+Warn the user and, where supported by browser APIs, restrict navigation, cancel a
+download, or provide another configured response. The system shall record whether
+the requested action was completed, unavailable, cancelled, or not applicable.
+
+\subsection{Dashboard Analysis and Reporting}
+Provide a React dashboard for manual URL, QR-code, email, and supported-file scans.
+The dashboard shall display results, evidence, threat details, analytics, and
+authorized history or reports stored through the backend.
+
+\subsection{Privacy-Preserving Analysis}
+Collect only the content required for the selected detector, never request real
+passwords, avoid unnecessary retention of raw content, and keep model credentials,
+database connections, and authentication secrets away from client code.
+
+\section{Scope and Limitations}
+\subsection{Scope}
+The scope includes a Manifest V3 Chromium extension, a React and Tailwind CSS
+dashboard, a Python FastAPI backend, Firebase Authentication, MongoDB application
+data, detection services, and optional AI, RAG, LLM, and reputation integrations.
+The system covers lightweight real-time checks as well as deeper user-authorized
+dashboard analysis. It includes a common result format, risk explanation, logging,
+reporting, and evaluation procedures.
+
+\subsection{Limitations}
+Protection is bounded by browser permissions, Chromium API visibility, network
+availability, model quality, detector coverage, external-service availability, and
+the evidence exposed by a page or file. A warning after navigation is not equivalent
+to prevention before page execution. Static analysis cannot establish every runtime
+behavior, and a low-risk result cannot guarantee that an item is harmless. The
+prototype will therefore report its analysis boundary and will complement rather
+than replace antivirus, browser security controls, and enterprise monitoring.
 
 \section{Significance of the Study}
-BrowseBlock brings threat detection, explanation, and user action into one workflow.
-General users receive practical warnings, while analysts and organizations can review
-evidence and historical reports. The design also treats privacy and limitations as
-security requirements: passwords are never collected for detection, sensitive data is
-minimized, authentication is handled by Firebase, and MongoDB access is restricted to
-authorized backend operations.
+BrowseBlock connects detection, explanation, and user action in one workflow.
+General users receive understandable warnings, while security analysts and
+organizations can inspect evidence and reports. The project is significant because
+it treats privacy, uncertainty, and enforcement status as first-class security
+requirements rather than presenting a model score as an unconditional verdict.
 
-\section{Proposed Solution}
-The extension performs lightweight, event-driven monitoring of navigation, page
-content, scripts, frames, notifications, downloads, and available extension activity.
-The FastAPI service coordinates models and deeper analysis, including XGBoost URL and
-file classification, Random Forest email screening, static file analysis, and RAG/LLM
-email analysis. The dashboard accepts manual URL, QR, email, and file scans and presents
-the resulting risk level, indicators, recommended action, and analysis limitations.
+\section{Project Overview}
+The extension observes supported browser events and performs lightweight checks or
+forwards validated input to FastAPI. The backend authenticates protected requests,
+dispatches detector modules, combines model and rule evidence, stores authorized
+scan records in MongoDB, and returns a consistent result. The dashboard uses the
+same API to submit deliberate scans and review detailed reports.
+
+\begin{center}
+\textit{Browser event $\rightarrow$ Extension $\rightarrow$ FastAPI
+$\rightarrow$ Detection service $\rightarrow$ Risk result $\rightarrow$
+Warning, report, or supported protective action}
+\end{center}
 
 \section{Expected Outcomes}
-The Phase I outcome is a validated requirements and design foundation for a modular
-BrowseBlock prototype. It defines the ten detection modules, their interfaces, data
-flows, security constraints, and evaluation needs. Phase II will implement the selected
-prototype modules, train and validate models on representative data, test browser
-compatibility, and measure precision, recall, false positives, latency, and the
-reliability of warning, blocking, quarantine, and logging actions.
+The Phase I outcome is a detailed requirements and design foundation for a modular
+BrowseBlock prototype. It defines threat modules, interfaces, data entities,
+authentication boundaries, privacy constraints, and evaluation metrics. Phase II
+will implement selected modules, train and validate models on representative data,
+test browser compatibility, measure precision, recall, false positives, latency,
+resource usage, and verify whether advertised warning, blocking, cancellation,
+quarantine, and logging actions were actually completed.
+
+\section{Sustainable Development Goals}
+BrowseBlock supports the Sustainable Development Goals (SDGs) by applying
+responsible computing to a practical cybersecurity problem. The project is
+primarily connected with SDG 4, SDG 8, SDG 9, SDG 16, and SDG 17. These
+connections are not claims that the software independently achieves an SDG;
+rather, they describe how the project contributes to the knowledge, safety,
+innovation, and responsible digital practices promoted by the goals.
+
+\subsection{SDG 4: Quality Education}
+BrowseBlock supports quality education by helping students and other learners
+use online learning platforms, digital libraries, email, and educational
+resources more safely. The extension provides understandable warnings and
+evidence instead of presenting only a technical model score. This can improve
+security awareness and help users recognize phishing, malicious redirects,
+unsafe downloads, deceptive notifications, and suspicious browser extensions.
+The project also provides an educational example of how machine learning,
+web technologies, privacy requirements, and secure software design can be
+combined in a real-world application.
+
+\subsection{SDG 8: Decent Work and Economic Growth}
+Unsafe links, credential theft, malicious files, and browser-based scams can
+cause financial loss and interrupt the work of individuals and small
+organizations. By identifying suspicious activity early and recommending
+appropriate protective actions, BrowseBlock can reduce avoidable exposure
+during online work. Its lightweight extension-based workflow is intended to
+support secure browsing without requiring expensive enterprise security
+infrastructure, making the approach relevant to users and organizations with
+limited resources.
+
+\subsection{SDG 9: Industry, Innovation and Infrastructure}
+The project contributes to SDG 9 through an innovative and modular security
+architecture. A Manifest V3 extension, FastAPI services, machine-learning
+detectors, reputation checks, a React dashboard, Firebase Authentication, and
+MongoDB are connected through defined interfaces. This architecture supports
+incremental improvement: new detectors, evidence sources, or evaluation
+methods can be added without redesigning the complete platform. The project
+also encourages reliable digital infrastructure by treating availability,
+latency, resource limits, and incomplete analysis as explicit design concerns.
+
+\subsection{SDG 16: Peace, Justice and Strong Institutions}
+Digital safety and trust are important components of inclusive and accountable
+institutions. BrowseBlock supports this goal by protecting users from common
+online deception and by recording evidence, risk classifications, explanations,
+and protective-action status in an auditable result model. Authentication,
+authorization, privacy controls, and clear reporting boundaries help prevent
+unauthorized access to scan history and reports. The system is designed to
+communicate uncertainty honestly, so that a failed or incomplete analysis is
+not incorrectly represented as proof that content is safe.
+
+\subsection{SDG 17: Partnerships for the Goals}
+Effective cybersecurity depends on cooperation among developers, researchers,
+educators, users, institutions, and providers of threat intelligence or
+reputation services. BrowseBlock is designed with integration boundaries for
+external data sources, authorized AI-assisted analysis, model evaluation, and
+future collaboration. The project documentation, common result format, and
+explicit detector limitations can support responsible sharing of findings and
+future development while protecting credentials and unnecessary user content.

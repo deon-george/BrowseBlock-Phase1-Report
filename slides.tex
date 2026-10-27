@@ -1,0 +1,27 @@
+\fancypagestyle{slidepage}{%
+  \fancyhf{}%
+  \fancyfoot[L]{\emph{Department of Computer Science and Engineering, SJCET Palai}}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \renewcommand{\footrulewidth}{0.4pt}%
+}
+
+\newcommand{\twoslides}[2]{%
+  \clearpage
+  \thispagestyle{slidepage}%
+  \begin{center}
+    \includegraphics[page=#1,width=\textwidth]{first.pdf}\par
+    \vfill
+    \includegraphics[page=#2,width=\textwidth]{first.pdf}
+  \end{center}
+}
+
+\twoslides{1}{2}
+\twoslides{3}{4}
+\twoslides{5}{6}
+\twoslides{7}{8}
+\twoslides{9}{10}
+\twoslides{11}{12}
+\twoslides{13}{14}
+\twoslides{15}{16}
+\twoslides{17}{18}
+\twoslides{19}{20}
